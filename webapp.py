@@ -1,9 +1,9 @@
-from flask import Flask
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Platform</title>
 
-app = Flask(__name__)
-
-# ---------- DARK MODE CSS ----------
-css = """
 <style>
 body {
     margin: 0;
@@ -72,21 +72,23 @@ section {
     padding-bottom: 20px;
 }
 </style>
-"""
 
-# ---------- HOMEPAGE ----------
-home_page = f"""
-{css}
+</head>
+<body>
+
 <header>Welcome to the Platform</header>
+
 <nav>
-    <a href="/">Home</a>
-    <a href="/editor">HTML Runner</a>
-    <a href="/echoza">Echoza</a>
-    <a href="/ai">AI Project</a>
+    <a onclick="scrollToSection('home')">Home</a>
+    <a onclick="scrollToSection('editor')">HTML Runner</a>
+    <a onclick="scrollToSection('echoza')">Echoza</a>
+    <a onclick="scrollToSection('ai')">AI Project</a>
 </nav>
 
 <div class="container">
-    <section>
+
+    <!-- HOME -->
+    <section id="home">
         <h1>Home</h1>
         <p>This platform contains:</p>
         <ul>
@@ -95,55 +97,17 @@ home_page = f"""
             <li>An AI project page</li>
         </ul>
     </section>
-</div>
-"""
 
-# ---------- HTML RUNNER PAGE ----------
-editor_page = f"""
-{css}
-<header>HTML Runner</header>
-<nav>
-    <a href="/">Home</a>
-    <a href="/editor">HTML Runner</a>
-    <a href="/echoza">Echoza</a>
-    <a href="/ai">AI Project</a>
-</nav>
-
-<div class="container">
-    <section>
-        <h1>Run Your HTML</h1>
+    <!-- HTML RUNNER -->
+    <section id="editor">
+        <h1>HTML Runner</h1>
         <textarea id="htmlBox"><h1 style='color:white;'>Hello!</h1></textarea>
         <button onclick="runHTML()">Run HTML ▶</button>
         <iframe id="outputFrame"></iframe>
     </section>
-</div>
 
-<script>
-function runHTML() {{
-    const html = document.getElementById("htmlBox").value;
-    const iframe = document.getElementById("outputFrame");
-    const doc = iframe.contentDocument || iframe.contentWindow.document;
-    doc.open();
-    doc.write(html);
-    doc.close();
-}}
-runHTML();
-</script>
-"""
-
-# ---------- ECHOZA PAGE ----------
-echoza_page = f"""
-{css}
-<header>Echoza Development</header>
-<nav>
-    <a href="/">Home</a>
-    <a href="/editor">HTML Runner</a>
-    <a href="/echoza">Echoza</a>
-    <a href="/ai">AI Project</a>
-</nav>
-
-<div class="container">
-    <section>
+    <!-- ECHOZA -->
+    <section id="echoza">
         <h1>Echoza Section</h1>
         <p>This page is for Echoza development and integration.</p>
         <ul>
@@ -152,22 +116,9 @@ echoza_page = f"""
             <li>Echoza features</li>
         </ul>
     </section>
-</div>
-"""
 
-# ---------- AI PAGE ----------
-ai_page = f"""
-{css}
-<header>AI Project</header>
-<nav>
-    <a href="/">Home</a>
-    <a href="/editor">HTML Runner</a>
-    <a href="/echoza">Echoza</a>
-    <a href="/ai">AI Project</a>
-</nav>
-
-<div class="container">
-    <section>
+    <!-- AI -->
+    <section id="ai">
         <h1>AI Project</h1>
         <p>This page is for building and testing your AI system.</p>
         <ul>
@@ -176,23 +127,24 @@ ai_page = f"""
             <li>AI features</li>
         </ul>
     </section>
+
 </div>
-"""
 
-@app.route("/")
-def home():
-    return home_page
+<script>
+function runHTML() {
+    const html = document.getElementById("htmlBox").value;
+    const iframe = document.getElementById("outputFrame");
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    doc.open();
+    doc.write(html);
+    doc.close();
+}
+runHTML();
 
-@app.route("/editor")
-def editor():
-    return editor_page
+function scrollToSection(id) {
+    document.getElementById(id).scrollIntoView({ behavior: "smooth" });
+}
+</script>
 
-@app.route("/echoza")
-def echoza():
-    return echoza_page
-
-@app.route("/ai")
-def ai():
-    return ai_page
-
-app.run(debug=True)
+</body>
+</html>
