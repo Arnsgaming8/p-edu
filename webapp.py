@@ -293,6 +293,60 @@ select option { background: #000; color: var(--green); }
     background: var(--green-dark);
     border-color: var(--green);
 }
+.msg-body .dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-right: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: think-bounce 1.1s ease-in-out infinite;
+}
+.msg-body .dot:nth-child(2) { animation-delay: .18s; }
+.msg-body .dot:nth-child(3) { animation-delay: .36s; }
+@keyframes think-bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: .35; }
+    30% { transform: translateY(-6px); opacity: 1; box-shadow: 0 0 10px var(--green); }
+}
+.msg-body h1, .msg-body h2, .msg-body h3, .msg-body h4 {
+    margin: 10px 0 4px;
+    color: var(--green);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 15px;
+    text-shadow: 0 0 8px rgba(0,255,65,.25);
+}
+.msg-body h1 { font-size: 17px; }
+.msg-body p { margin: 4px 0; }
+.msg-body ul { margin: 4px 0; padding-left: 22px; }
+.msg-body li { margin: 2px 0; }
+.msg-body pre {
+    background: #04120a;
+    border: 1px solid var(--border);
+    padding: 8px 10px;
+    overflow-x: auto;
+    margin: 6px 0;
+}
+.msg-body code {
+    font-family: 'Cascadia Code', Consolas, monospace;
+    color: var(--green);
+    background: rgba(0,255,65,.08);
+    padding: 1px 4px;
+}
+.msg-body pre code { background: none; padding: 0; color: #c8ffd2; }
+.msg-body .code-block { margin: 6px 0; border: 1px solid var(--border); background: #04120a; }
+.msg-body .code-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 8px; background: rgba(0,255,65,.07); border-bottom: 1px solid var(--border); }
+.msg-body .code-head span { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-family: 'Cascadia Code', Consolas, monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.msg-body .code-block pre { border: none; margin: 0; padding: 8px 10px; }
+.msg-body .copy-btn { background: none; border: 1px solid var(--border); color: var(--green); font-family: 'Cascadia Code', Consolas, monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; padding: 1px 8px; cursor: pointer; flex-shrink: 0; }
+.msg-body .copy-btn:hover { background: var(--green); color: #000; }
+.msg-body blockquote {
+    border-left: 3px solid var(--green);
+    margin: 6px 0;
+    padding: 2px 10px;
+    color: var(--muted);
+}
+.msg-body a { color: var(--green); text-decoration: underline; }
 .chat-input-row {
     display: flex;
     gap: 10px;
@@ -731,9 +785,9 @@ select option { background: #000; color: var(--green); }
 NAV = """
 <nav>
     <a href="/">Home</a>
-    <a href="/embed">Chat</a>
-    <a href="/ai">AI Studio</a>
-    <a href="/editor">HTML Runner</a>
+    <a href="/english">Chat</a>
+    <a href="/art">AI Studio</a>
+    <a href="/math">HTML Runner</a>
 </nav>
 """
 
@@ -776,6 +830,66 @@ function saveHistory() {
     try { localStorage.setItem(CONV_KEY, JSON.stringify(chatHistory.slice(-60))); } catch (e) {}
 }
 
+function escHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function inlineMd(s) {
+    return s
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\\*\\*([^*]+)\\*\\*/g, '<strong>$1</strong>')
+        .replace(/\\*([^*]+)\\*/g, '<em>$1</em>')
+        .replace(/\\[([^\\]]+)\\]\\((https?:\\/\\/[^\\s)]+)\\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+}
+function renderMarkdown(md) {
+    if (!md) return '';
+    var lines = escHtml(md).split('\\n');
+    var html = '';
+    var i;
+    var inCode = false;
+    var codeBuf = [];
+    var codeLang = '';
+    var listOpen = false;
+    for (i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        if (line.indexOf('```') === 0) {
+            if (inCode) {
+                html += codeBlock(codeBuf.join('\\n'), codeLang);
+                codeBuf = [];
+                inCode = false;
+                codeLang = '';
+            } else {
+                codeLang = line.slice(3).trim();
+                inCode = true;
+            }
+            continue;
+        }
+        if (inCode) { codeBuf.push(line); continue; }
+        var h = line.match(/^(#{1,6})\\s+(.*)/);
+        if (h) {
+            html += '<h' + h[1].length + '>' + inlineMd(h[2]) + '</h' + h[1].length + '>';
+            continue;
+        }
+        if (line.indexOf('&gt;') === 0) {
+            html += '<blockquote>' + inlineMd(line.replace(/^&gt;\\s?/, '')) + '</blockquote>';
+            continue;
+        }
+        var li = line.match(/^\\s*[-*]\\s+(.*)/) || line.match(/^\\s*\\d+\\.\\s+(.*)/);
+        if (li) {
+            if (!listOpen) { html += '<ul>'; listOpen = true; }
+            html += '<li>' + inlineMd(li[1]) + '</li>';
+            continue;
+        }
+        if (listOpen) { html += '</ul>'; listOpen = false; }
+        if (!line.trim()) continue;
+        html += '<p>' + inlineMd(line) + '</p>';
+    }
+    if (inCode) html += codeBlock(codeBuf.join('\\n'), codeLang);
+    if (listOpen) html += '</ul>';
+    return html;
+}
+function codeBlock(code, lang) {
+    return '<div class="code-block"><div class="code-head"><span>' + (lang || 'code') + '</span><button class="copy-btn" type="button">copy</button></div><pre><code>' + code + '</code></pre></div>';
+}
 function addMessage(role, text) {
     var wrap = document.createElement('div');
     wrap.className = 'msg ' + role;
@@ -784,7 +898,8 @@ function addMessage(role, text) {
     label.textContent = role === 'user' ? 'You' : 'Platform AI';
     var body = document.createElement('div');
     body.className = 'msg-body';
-    body.textContent = text;
+    if (role === 'ai' && text) { body.innerHTML = renderMarkdown(text); }
+    else { body.textContent = text; }
     wrap.appendChild(label);
     wrap.appendChild(body);
     chatLog.appendChild(wrap);
@@ -809,7 +924,8 @@ function sendMessage() {
     }
     chatInput.value = '';
     addMessage('user', text);
-    var pending = addMessage('ai', '\\u2026 thinking');
+    var pending = addMessage('ai', '');
+    pending.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
     var model = 'openrouter/free';
     var payload = { model: model, messages: [SYSTEM_ANCHOR].concat(chatHistory, [{ role: 'user', content: text }]), turnstile_token: window.turnstileToken || '', verified_pass: aiPass };
     fetch('/api/ai/chat', {
@@ -832,7 +948,7 @@ function sendMessage() {
             if (window.turnstile && window.turnstile.reset) window.turnstile.reset();
         }
         if (data.reply) {
-            pending.textContent = data.reply;
+            pending.innerHTML = renderMarkdown(data.reply);
             chatHistory.push({ role: 'user', content: text });
             chatHistory.push({ role: 'assistant', content: data.reply });
             chatHistory = chatHistory.slice(-60);
@@ -874,6 +990,27 @@ fetch('/api/ai/status').then(function (r) { return r.json(); }).then(function (d
     } else {
         pill.textContent = '\\u25cf AI offline';
         pill.className = 'pill offline';
+    }
+});
+
+chatLog.addEventListener('click', function (ev) {
+    var btn = ev.target.closest('.copy-btn');
+    if (!btn) return;
+    var txt = btn.closest('.code-block').querySelector('pre').textContent;
+    btn.textContent = 'copied';
+    function restore() { setTimeout(function () { btn.textContent = 'copy'; }, 1500); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(restore, restore);
+    } else {
+        var ta = document.createElement('textarea');
+        ta.value = txt;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); } catch (e2) {}
+        document.body.removeChild(ta);
+        restore();
     }
 });
 """
@@ -1590,24 +1727,39 @@ def home():
     return home_page
 
 
+@app.route("/english")
+def english():
+    return chat_page
+
+
 @app.route("/embed")
 def embed():
-    return chat_page
+    return redirect("/english")
 
 
 @app.route("/echoza")
 def echoza():
-    return redirect("/embed")
+    return redirect("/english")
+
+
+@app.route("/art")
+def art():
+    return ai_page
 
 
 @app.route("/ai")
 def ai():
-    return ai_page
+    return redirect("/art")
+
+
+@app.route("/math")
+def math():
+    return editor_page
 
 
 @app.route("/editor")
 def editor():
-    return editor_page
+    return redirect("/math")
 
 
 
@@ -2244,8 +2396,8 @@ def pwa_manifest():
 def pwa_sw():
     from flask import Response
     sw = """
-var CACHE = "platform-v7";
-var PAGES = ["/", "/ai", "/editor", "/embed", "/manifest.json", "/sw.js", "/P.svg", "/icon.svg"];
+var CACHE = "platform-v9";
+var PAGES = ["/", "/art", "/math", "/english", "/manifest.json", "/sw.js", "/P.svg", "/icon.svg"];
 
 self.addEventListener("install", function(e) {
     
