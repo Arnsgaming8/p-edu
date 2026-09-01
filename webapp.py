@@ -340,6 +340,11 @@ select option { background: #000; color: var(--green); }
 .msg-body .code-block pre { border: none; margin: 0; padding: 8px 10px; }
 .msg-body .copy-btn { background: none; border: 1px solid var(--border); color: var(--green); font-family: 'Cascadia Code', Consolas, monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; padding: 1px 8px; cursor: pointer; flex-shrink: 0; }
 .msg-body .copy-btn:hover { background: var(--green); color: #000; }
+.msg-body table { border-collapse: collapse; margin: 6px 0; width: 100%; font-size: 13px; }
+.msg-body th, .msg-body td { border: 1px solid var(--border); padding: 5px 8px; text-align: left; vertical-align: top; }
+.msg-body th { background: rgba(0,255,65,.08); color: var(--green); text-transform: uppercase; letter-spacing: 1px; font-size: 11px; font-weight: 600; }
+.msg-body tbody tr:nth-child(even) td { background: rgba(0,255,65,.03); }
+.msg-body table code { font-size: 12px; }
 .msg-body blockquote {
     border-left: 3px solid var(--green);
     margin: 6px 0;
@@ -864,6 +869,15 @@ function renderMarkdown(md) {
             continue;
         }
         if (inCode) { codeBuf.push(line); continue; }
+        if (tableLine(line) && i + 1 < lines.length && sepRow(lines[i + 1])) {
+            var trows = [lineToCells(line)];
+            while (i + 1 < lines.length && tableLine(lines[i + 1])) {
+                trows.push(lineToCells(lines[i + 1]));
+                i++;
+            }
+            html += tableHtml(trows);
+            continue;
+        }
         var h = line.match(/^(#{1,6})\\s+(.*)/);
         if (h) {
             html += '<h' + h[1].length + '>' + inlineMd(h[2]) + '</h' + h[1].length + '>';
@@ -886,6 +900,37 @@ function renderMarkdown(md) {
     if (inCode) html += codeBlock(codeBuf.join('\\n'), codeLang);
     if (listOpen) html += '</ul>';
     return html;
+}
+function sepRow(l) {
+    if (l.indexOf('-') === -1) return false;
+    if (l.indexOf('|') === -1) return false;
+    return /^[ 	]*[|]?[ 	]*:?-+:?(?:[ 	]*[|][ 	]*:?-+:?)*[ 	]*[|]?[ 	]*$/.test(l);
+}
+function tableLine(l) { return !!l && (l.charAt(0) === '|' || l.charAt(l.length - 1) === '|'); }
+function lineToCells(line) {
+    var s = line.trim();
+    if (s.charAt(0) === '|') s = s.slice(1);
+    if (s.charAt(s.length - 1) === '|') s = s.slice(0, -1);
+    var cells = s.split('|');
+    var bs = String.fromCharCode(92);
+    for (var c = 0; c < cells.length; c++) {
+        cells[c] = inlineMd(cells[c].split(bs + '|').join('|').trim());
+    }
+    return cells;
+}
+function tableHtml(rows) {
+    var out = '<table><thead><tr>';
+    var hdr = rows[0] || [];
+    for (var c = 0; c < hdr.length; c++) out += '<th>' + (hdr[c] || '') + '</th>';
+    out += '</tr></thead><tbody>';
+    for (var r = 2; r < rows.length; r++) {
+        out += '<tr>';
+        var cells = rows[r] || [];
+        for (var c2 = 0; c2 < cells.length; c2++) out += '<td>' + (cells[c2] || '') + '</td>';
+        out += '</tr>';
+    }
+    out += '</tbody></table>';
+    return out;
 }
 function codeBlock(code, lang) {
     return '<div class="code-block"><div class="code-head"><span>' + (lang || 'code') + '</span><button class="copy-btn" type="button">copy</button></div><pre><code>' + code + '</code></pre></div>';
@@ -2396,7 +2441,7 @@ def pwa_manifest():
 def pwa_sw():
     from flask import Response
     sw = """
-var CACHE = "platform-v9";
+var CACHE = "platform-v10";
 var PAGES = ["/", "/art", "/math", "/english", "/manifest.json", "/sw.js", "/P.svg", "/icon.svg"];
 
 self.addEventListener("install", function(e) {
