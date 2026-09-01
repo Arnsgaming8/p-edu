@@ -12,7 +12,7 @@ _LEET_SUB = str.maketrans({
 })
 
 BAD_WORDS = (
-    # ---------- Profanity ----------
+    
     "fuck", "fucking", "fucker", "fucked", "fucks", "fuckin", "fck", "fuk",
     "fvck", "phuck", "motherfucker", "motherfucking", "motherfuckers",
     "fucktard", "fucktards", "fuckface", "fuckfaces", "fuckwad", "fuckwads",
@@ -44,7 +44,7 @@ BAD_WORDS = (
     "nobhead", "nobheads", "prick", "pricks", "prickface", "schmuck",
     "schmucks", "putz", "putzes", "douche", "douches", "douchebag",
     "douchebags",
-    # ---------- Sexual content ----------
+    
     "sex", "sexy", "sexual", "sexually", "sexting", "sext", "sexts",
     "sexted", "porn", "porno", "pornography", "pornographic", "pornstar",
     "pornstars", "nsfw", "nudes",
@@ -80,7 +80,7 @@ BAD_WORDS = (
     "dominatrix", "gigolo", "gigolos", "pimp", "pimps", "pimping",
     "fingering", "fisting",    "deepthroat", "deepthroating", "rawdog",
     "booty", "booties", "xxx",
-    # ---------- Sexual slang / insults ----------
+    
     "hoe", "hoes", "hoebag", "hoebags", "thot", "thots", "thotty",
     "skank", "skanks", "skanky", "tramp", "tramps", "slag", "slags",
     "tart", "tarts", "harlot", "harlots", "strumpet", "bimbo", "bimbos",
@@ -88,7 +88,7 @@ BAD_WORDS = (
     "incels", "cuck", "cucks", "cuckold", "cuckolds", "perv", "pervs",
     "pervert", "perverts", "perverted", "deviant", "deviants",
     "degenerate", "degenerates", "sicko", "sickos", "roofie", "roofies",
-    # ---------- Slurs ----------
+    
     "nigger", "niggers", "nigga", "niggas", "niggaz",
     "faggot", "faggots", "fagot", "fagots", "fag", "fags", "faggotry",
     "retard", "retards", "retarded", "mongoloid", "spaz",
@@ -113,10 +113,10 @@ BAD_WORDS = (
     "pickaninnies", "wigger", "wiggers", "whitey", "whiteys", "cracker",
     "crackers", "peckerwood", "peckerwoods", "whitetrash", "redneck",
     "rednecks", "gypsy", "gypsies", "gyp", "gypped", "pikey", "pikeys",
-    # ---------- Self-harm ----------
+    
     "suicide", "suicidal", "kys", "kms", "unalive", "unalived",
     "sewerslide", "overdose", "overdosing", "overdosed",
-    # ---------- Drugs ----------
+    
     "cocaine", "heroin", "meth", "methamphetamine", "methamphetamines",
     "ecstasy", "mdma", "lsd", "fentanyl", "oxycodone", "ketamine",
     "weed", "marijuana", "cannabis", "pot", "grass", "chronic", "dope",
@@ -176,7 +176,7 @@ def flag_text(text):
     n = _norm(text)
     if not n:
         return None
-    c = re.sub(r"(.)\1+", r"\1", n)  # catch "fuuuuck" -> "fuck"
+    c = re.sub(r"(.)\1+", r"\1", n)  
     m = _BAD_RE.search(n) or _BAD_RE.search(c)
     if m:
         return m.group(0)
@@ -187,7 +187,7 @@ def flag_text(text):
 
 
 if __name__ == "__main__":
-    # Quick smoke test
+    
     tests = [
         ("fuck you", "fuck"),
         ("s3x", "sex"),

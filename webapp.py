@@ -14,21 +14,21 @@ from datetime import datetime, timezone
 
 app = Flask(__name__)
 
-# Where the OpenAI-compatible AI API lives (OpenRouter by default).
+
 AI_BASE_URL = os.environ.get("AI_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
 AI_API_KEY = os.environ.get("AI_API_KEY", "")
 AI_DEFAULT_MODEL = os.environ.get("AI_DEFAULT_MODEL", "openrouter/free")
 TURNSTILE_SITE_KEY = "0x4AAAAAAEjc0hCJvIuWXbRC"
 TURNSTILE_SECRET_KEY = os.environ.get("TURNSTILE_SECRET_KEY", "")
 
-# Upstash Redis powers the Chat (messages auto-expire after 24h).
+
 UPSTASH_REDIS_REST_URL = os.environ.get("UPSTASH_REDIS_REST_URL", "")
 UPSTASH_REDIS_REST_TOKEN = os.environ.get("UPSTASH_REDIS_REST_TOKEN", "")
 
-CHAT_RATE_LIMIT = 10    # max messages per user per window
-CHAT_RATE_WINDOW = 30   # seconds
+CHAT_RATE_LIMIT = 10    
+CHAT_RATE_WINDOW = 30   
 
-# ---------- DARK MODE CSS ----------
+
 css = """
 <link rel="manifest" href="/manifest.json">
 <meta charset="UTF-8">
@@ -174,7 +174,7 @@ section {
     padding-bottom: 20px;
 }
 h1, h2, h3 { color: var(--green); text-shadow: 0 0 8px rgba(0,255,65,.3); }
-/* cards on the home page */
+
 .card-grid {
     display: flex;
     gap: 16px;
@@ -199,7 +199,7 @@ h1, h2, h3 { color: var(--green); text-shadow: 0 0 8px rgba(0,255,65,.3); }
     border-color: var(--green);
     box-shadow: 0 0 14px rgba(0,255,65,.25), inset 0 0 14px rgba(0,255,65,.05);
 }
-/* forms */
+
 label {
     display: block;
     margin: 10px 0 4px;
@@ -229,7 +229,7 @@ select option { background: #000; color: var(--green); }
     flex: 1;
     min-width: 160px;
 }
-/* status pill */
+
 .pill {
     display: inline-block;
     padding: 3px 10px;
@@ -251,7 +251,7 @@ select option { background: #000; color: var(--green); }
     color: var(--red);
     border-color: var(--red);
 }
-/* chat */
+
 .chat-log {
     background: rgba(0,0,0,.6);
     border: 1px solid var(--border);
@@ -319,7 +319,7 @@ select option { background: #000; color: var(--green); }
     width: 240px;
 }
 .model-row select { cursor: pointer; }
-/* console */
+
 .console {
     background: #000;
     border: 1px solid var(--border);
@@ -348,7 +348,7 @@ select option { background: #000; color: var(--green); }
 .tool-row button {
     margin-top: 0;
 }
-/* HTML Runner workbench */
+
 .runner-toolbar {
     display: flex;
     align-items: center;
@@ -417,7 +417,7 @@ select option { background: #000; color: var(--green); }
     .runner-grid { grid-template-columns: minmax(0, 1fr); }
     .runner-grid { gap: 12px; }
 }
-/* friends chat */
+
 .chat-box { display: flex; gap: 12px; align-items: stretch; max-width: 960px; min-height: 560px; }
 .name-screen { text-align: center; padding: 48px 0 24px; }
 .name-screen .row { max-width: 360px; margin: 0 auto; }
@@ -428,7 +428,7 @@ select option { background: #000; color: var(--green); }
 .msg .msg-meta { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
 .msg .msg-meta .who { font-weight: 600; color: var(--green); }
 .msg.own .msg-body { background: var(--green-dark); border-color: var(--green); }
-/* sidebar */
+
 .chat-sidebar {
     width: 270px; min-width: 270px; background: var(--bg2); border: 1px solid var(--border);
     border-radius: 0; display: flex; flex-direction: column; overflow: hidden;
@@ -455,7 +455,7 @@ select option { background: #000; color: var(--green); }
 .conv-preview { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .conv-badge { display: none; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--green); color: #000; font-size: 11px; font-weight: 700; align-items: center; justify-content: center; flex-shrink: 0; }
 .conv-badge.show { display: flex; }
-/* main pane */
+
 .chat-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .chat-topbar {
     display: flex; align-items: center; gap: 10px; padding: 8px 12px;
@@ -466,7 +466,7 @@ select option { background: #000; color: var(--green); }
 .chat-topbar button:hover { background: var(--muted); color: #000; }
 .chat-main .chat-log { height: auto; flex: 1; margin-top: 0; border-radius: 0; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
 .chat-input-row { margin-top: 0; padding: 10px; background: var(--bg2); border: 1px solid var(--border); border-top: none; border-radius: 0; }
-/* search overlay */
+
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.75); display: flex; align-items: center; justify-content: center; z-index: 100; }
 .overlay-card { background: var(--bg2); border: 1px solid var(--green); border-radius: 0; padding: 20px; width: 340px; max-width: 90vw; box-shadow: 0 0 20px rgba(0,255,65,.15); }
 .overlay-card h3 { color: var(--green); margin-top: 0; }
@@ -482,7 +482,7 @@ select option { background: #000; color: var(--green); }
     .chat-sidebar { position: fixed; top: 52px; bottom: 0; left: 0; z-index: 50; width: 82%; max-width: 300px; border-radius: 0; }
     .chat-sidebar.collapsed { display: none; }
 }
-/* iOS install-to-home-screen overlay */
+
 .ios-install-overlay {
     position: fixed; inset: 0; z-index: 9999; background: rgba(5,10,5,.97);
     display: none; flex-direction: column; align-items: center; justify-content: center;
@@ -673,7 +673,7 @@ select option { background: #000; color: var(--green); }
 <script>
 (function () {
     if (!("serviceWorker" in navigator)) return;
-    // Ask the browser to keep the offline cache forever (no eviction).
+    
     if (navigator.storage && navigator.storage.persist) {
         navigator.storage.persist().catch(function() {});
     }
@@ -682,7 +682,7 @@ select option { background: #000; color: var(--green); }
         tries++;
         navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" })
             .catch(function() {
-                // A blocked first attempt can succeed later - retry a few times.
+                
                 if (tries < 3) setTimeout(reg, tries * 5000);
             });
     }
@@ -690,7 +690,7 @@ select option { background: #000; color: var(--green); }
     else { window.addEventListener("load", reg); }
 })();
 </script>
-<!-- iOS install-to-home-screen overlay (Apple devices only) -->
+
 <div class="ios-install-overlay" id="iosInstallOverlay">
     <div class="ios-install-card">
         <h2>Install The Platform</h2>
@@ -737,12 +737,12 @@ NAV = """
 </nav>
 """
 
-# ---------- PAGE SCRIPTS (plain strings so braces inside JS are safe) ----------
+
 
 ai_js = """
 var chatLog = document.getElementById('chatLog');
 var chatInput = document.getElementById('chatInput');
-// Each device gets its own private conversation. The AI only ever sees this browser's chat.
+
 function deviceId() {
     try {
         var id = localStorage.getItem('ai_device_id');
@@ -761,12 +761,12 @@ try {
     if (!Array.isArray(chatHistory)) { chatHistory = []; }
 } catch (e) { chatHistory = []; }
 
-// One-time bot scan: after the first check the server mints a signed pass
-// that lasts a day, so later messages never re-scan the visitor.
+
+
 var aiPass = '';
 try { aiPass = localStorage.getItem('platform_ai_pass') || ''; } catch (e) {}
 
-// Anchor the AI to this one conversation so it never claims to know other users.
+
 var SYSTEM_ANCHOR = {
     role: 'system',
     content: 'You are talking to one specific person in one private conversation. The only messages you can see are the ones in this chat. You have no memory of any other user, device, or conversation on this site. If someone asks what you know about other people or other chats, say that you only know this conversation and nothing else.'
@@ -825,7 +825,7 @@ function sendMessage() {
             try { localStorage.setItem('platform_ai_pass', data.pass); } catch (e2) {}
         }
         if (data.error && /verification/i.test(String(data.error))) {
-            // Pass expired or was rejected: clear it and ask for one fresh scan.
+            
             aiPass = '';
             try { localStorage.removeItem('platform_ai_pass'); } catch (e2) {}
             window.clearTurnstileToken();
@@ -845,7 +845,7 @@ function sendMessage() {
             pending.textContent = '\\u26a0 ' + (errMsg || 'The AI did not return a reply. Try again in a moment.');
         }
     }).catch(function (err) {
-        // Keep the pass; a network blip must not force another scan.
+        
         window.turnstileToken = '';
         pending.textContent = '\\u26a0 ' + err;
     });
@@ -870,7 +870,7 @@ fetch('/api/ai/status').then(function (r) { return r.json(); }).then(function (d
     if (d.ok) {
         pill.textContent = '\u25cf AI online';
         pill.className = 'pill online';
-        // Model is locked to openrouter/free - the dropdown stays fixed.
+        
     } else {
         pill.textContent = '\\u25cf AI offline';
         pill.className = 'pill offline';
@@ -878,11 +878,11 @@ fetch('/api/ai/status').then(function (r) { return r.json(); }).then(function (d
 });
 """
 
-# Script injected into the playground iframe so console.* and errors
-# get forwarded to the parent page via postMessage.
+
+
 console_shim = """
 (function () {
-    if (window.__PLATFORM_CONSOLE_SHIM__) return;  // wrap console only once per iframe lifetime
+    if (window.__PLATFORM_CONSOLE_SHIM__) return;  
     window.__PLATFORM_CONSOLE_SHIM__ = true;
     var channel = 'PLATFORM_CONSOLE';
     function send(level, args) {
@@ -942,13 +942,13 @@ codeBox.addEventListener('keydown', function (e) {
 
 document.getElementById('runBtn').addEventListener('click', runCode);
 
-// The sample page is shown in the Preview, but not loaded into the editor box.
+
 renderToFrame(HTML_DEFAULT);
 codeBox.focus();
 """
 )
 
-# ---------- HOMEPAGE ----------
+
 settings_html = """<div class="turnstile-settings-wrap"><div class="cf-turnstile" data-sitekey="0x4AAAAAAEjc0hCJvIuWXbRC" data-appearance="interaction-only" data-callback="setTurnstileToken" data-expired-callback="clearTurnstileToken" data-error-callback="clearTurnstileToken"></div></div><p class="turnstile-disclosure">Protected by <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Cloudflare Turnstile</a></p>
 <script>
 window.turnstileToken = '';
@@ -961,7 +961,7 @@ window.refreshTurnstile = function () {
     window.turnstileToken = '';
     var hasPass = false;
     try { hasPass = !!localStorage.getItem('platform_ai_pass'); } catch (e) {}
-    if (hasPass) return;  // already scanned once; skip the re-scan
+    if (hasPass) return;  
     if (window.turnstile && window.turnstile.reset) window.turnstile.reset();
 };
 window.addEventListener('pageshow', function () {
@@ -1034,7 +1034,7 @@ window.addEventListener('pageshow', function () {
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') ov.classList.remove('show'); });
     document.getElementById('resetTheme').addEventListener('click', function () { PT.reset(); render(); });
 })();
-// One-time theme prompt
+
 (function () {
     try { if (localStorage.getItem('platform_theme_prompted') || !window.PlatformTheme) return; } catch (e) { return; }
     var p = document.getElementById('settingsPrompt');
@@ -1078,7 +1078,7 @@ home_page = f"""
 </div>
 """
 
-# ---------- AI STUDIO PAGE ----------
+
 ai_page = f"""
 {css}
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
@@ -1110,7 +1110,7 @@ ai_page = f"""
 </script>
 """
 
-# ---------- CODE PLAYGROUND PAGE ----------
+
 editor_page = f"""
 {css}
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
@@ -1152,13 +1152,13 @@ editor_page = f"""
 </script>
 """
 
-# ---------- FRIENDS CHAT PAGE ----------
+
 chat_js = """
 var STORE = { user: 'chat_username', history: 'chat_history', day: 'chat_last_day', unread: 'chat_unread' };
 
 function todayStr() { return new Date().toISOString().slice(0, 10); }
 
-// Must mirror the server's _sanitize_name + _conv_id exactly.
+
 function sanitize(name) {
     return (name || '').replace(/[^A-Za-z0-9 ._\-]/g, '-').trim().slice(0, 24) || 'anon';
 }
@@ -1193,7 +1193,7 @@ function trackUnread(convs) {
     saveUnread();
 }
 
-// Daily wipe: if the stored day is not today, clear the local chat copies.
+
 (function wipeOld() {
     var today = todayStr();
     if (localStorage.getItem(STORE.day) !== today) {
@@ -1396,7 +1396,7 @@ function startChat() {
     var name = els.nameInput.value.trim().slice(0, 24);
     if (!name) { els.nameError.textContent = 'Pick a username'; return; }
     els.nameError.textContent = '';
-    // Register immediately so this account appears in search before sending a message.
+    
     api('/api/chat/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1424,7 +1424,7 @@ function enterChat(name) {
     setInterval(wipeCheck, 60000);
 }
 
-// Keep the daily wipe honest even if the page stays open across midnight.
+
 function wipeCheck() {
     if (localStorage.getItem(STORE.day) !== todayStr()) {
         localStorage.removeItem(STORE.history);
@@ -1495,7 +1495,7 @@ els.searchInput.addEventListener('input', function () { clearTimeout(els._t); el
 els.switchBtn.addEventListener('click', switchUser);
 els.overlay.addEventListener('click', function (e) { if (e.target === els.overlay) closeSearch(); });
 
-// Delete account: two-step confirm, then wipe server + local data.
+
 var _delArmed = false;
 els.deleteAcctBtn.addEventListener('click', function () {
     if (!_delArmed) {
@@ -1516,7 +1516,7 @@ els.deleteAcctBtn.addEventListener('click', function () {
     });
 });
 
-// Auto-login: if a username is saved, skip the name screen.
+
 if (state.me) {
     enterChat(state.me);
 }
@@ -1582,7 +1582,7 @@ chat_page = f"""
 </script>
 """
 
-# ---------- ROUTES ----------
+
 
 
 @app.route("/")
@@ -1610,7 +1610,7 @@ def editor():
     return editor_page
 
 
-# ---------- FRIENDS CHAT API (auto-expiring, powered by Upstash Redis) ----------
+
 
 
 def _redis():
@@ -1628,7 +1628,7 @@ def _redis():
 CHAT_USER_MAX = 24
 CHAT_TEXT_MAX = 1000
 CHAT_MAX_MESSAGES = 200
-CHAT_DAY_TTL = 86400  # 24h - texts auto-delete every day
+CHAT_DAY_TTL = 86400  
 CHAT_USERS_KEY = "chat:users"
 
 
@@ -1710,7 +1710,7 @@ def chat_register():
     if not user:
         return jsonify({"error": "valid user is required"}), 400
     try:
-        # Usernames are unique regardless of capitalization.
+        
         existing = redis.smembers(CHAT_USERS_KEY) or []
         normalized = user.casefold()
         for raw_name in existing:
@@ -1736,8 +1736,8 @@ def chat_users():
         return jsonify({"error": f"Chat store error: {e}"}), 502
     users = []
     for raw_name in names:
-        # Redis clients can return strings, bytes, or unexpected values
-        # depending on configuration. Normalize before filtering/rendering.
+        
+        
         if isinstance(raw_name, bytes):
             name = raw_name.decode("utf-8", errors="ignore")
         else:
@@ -1814,8 +1814,8 @@ def chat_delete():
     if not user:
         return jsonify({"error": "user is required"}), 400
     try:
-        # Remove the account from discovery and collect every conversation index
-        # that points to it, including indexes held by the other participants.
+        
+        
         redis.srem(CHAT_USERS_KEY, user)
         entries = redis.smembers(_conv_index_key(user)) or []
         conv_ids = set()
@@ -1827,13 +1827,13 @@ def chat_delete():
                 peers.add(peer)
         redis.delete(_conv_index_key(user))
 
-        # Delete complete conversations, not only the deleted user's messages,
-        # and remove those conversations from every peer's sidebar.
+        
+        
         for conv_id in conv_ids:
             redis.delete(_conv_day_key(conv_id))
             for peer in peers:
                 redis.srem(_conv_index_key(peer), _index_entry(conv_id, user))
-        # Defensive cleanup for stale indexes that still reference this user.
+        
         for peer in redis.smembers(CHAT_USERS_KEY) or []:
             if isinstance(peer, str) and peer.lower() != user.lower():
                 peer_entries = redis.smembers(_conv_index_key(peer)) or []
@@ -1883,8 +1883,8 @@ def chat_send():
         redis.rpush(day_key, json.dumps(message))
         redis.expire(day_key, CHAT_DAY_TTL)
         conv_id = _conv_id(user, to)
-        # Both accounts are normally registered already. Keep this membership
-        # update for legacy clients, without creating duplicate set entries.
+        
+        
         redis.sadd(CHAT_USERS_KEY, user, to)
         for owner, peer in ((user, to), (to, user)):
             idx = _conv_index_key(owner)
@@ -1898,13 +1898,13 @@ def chat_send():
 from filter import flag_text
 
 
-# ---------- ONE-TIME BOT SCAN ----------
-# Turnstile tokens are single use, so once a visitor passes the check the
-# server mints a short-lived signed pass. Every later AI message reuses that
-# pass instead of forcing a new scan. It expires after AI_PASS_TTL seconds,
-# which is also when the site-verify entry is forgotten server side.
+
+
+
+
+
 AI_PASS_SECRET = os.environ.get("AI_PASS_SECRET") or "the-platform-ai-pass-secret"
-AI_PASS_TTL = 24 * 3600  # one scan lasts a full day
+AI_PASS_TTL = 24 * 3600  
 
 
 def _mint_ai_pass():
@@ -1934,7 +1934,7 @@ def ai_chat():
     if TURNSTILE_SECRET_KEY:
         verified_pass = (data.get("verified_pass") or "").strip()
         if verified_pass and _check_ai_pass(verified_pass):
-            pass  # already scanned once; reuse the existing pass
+            pass  
         else:
             token = (data.get("turnstile_token") or "").strip()
             if not token:
@@ -1951,12 +1951,12 @@ def ai_chat():
             except Exception:
                 return jsonify({"error": "Verification service unavailable. Please try again."}), 503
             if not verification.get("success"):
-                return jsonify({"error": "Verification failed. Please try again."}), 403  # locked: only the default (openrouter/free) model is allowed
+                return jsonify({"error": "Verification failed. Please try again."}), 403  
             minted_pass = _mint_ai_pass()
     if not messages:
         return jsonify({"error": "No messages provided"}), 400
 
-    # Scan the incoming user message for inappropriate content.
+    
     last_user = ""
     for m in reversed(messages):
         if isinstance(m, dict) and m.get("role") == "user" and m.get("content"):
@@ -2016,9 +2016,9 @@ def ai_chat():
         headers=headers,
         method="POST",
     )
-    # OpenRouter/free routing can briefly fail or return gateway errors.
-    # Retry only transient failures, with short backoff, so normal requests
-    # do not become intermittent 502s at the Vercel boundary.
+    
+    
+    
     body = None
     last_error = None
     for attempt in range(3):
@@ -2044,13 +2044,13 @@ def ai_chat():
     try:
         choice = body.get("choices") or [{}]
         content = (choice[0].get("message") or {}).get("content") or ""
-        # Some free models append safety-label lines like "User Safety: safe"
-        # or "Response Safety: safe" to their replies. Strip them so users
-        # only see the actual answer.
+        
+        
+        
         content = re.sub(r"(?im)^\s*(user safety|response safety):[^\n]*\n?", "", content).strip()
         if not content:
-            # Treat an empty completion as a transient upstream failure and
-            # retry the whole request rather than exposing internal details.
+            
+            
             for retry in range(2):
                 time.sleep(0.6 * (retry + 1))
                 try:
@@ -2113,7 +2113,7 @@ def ai_status():
             except (TypeError, ValueError):
                 return False
 
-        # Only surface truly free models (prompt + completion priced at $0).
+        
         free_ids = []
         for m in models:
             if not isinstance(m, dict) or not m.get("id"):
@@ -2165,7 +2165,7 @@ def _security_headers(resp):
     return resp
 
 
-# ---------- CORS (GitHub Pages mirror calls these same APIs) ----------
+
 ALLOWED_API_ORIGINS = {
     "https://theplatform-app.vercel.app",
     "https://the-platform-alt.vercel.app",
@@ -2205,7 +2205,7 @@ def _cors_preflight():
     return None
 
 
-# ---------- PWA ASSETS ----------
+
 
 @app.route("/P.svg")
 def pwa_logo():
@@ -2248,8 +2248,8 @@ var CACHE = "platform-v7";
 var PAGES = ["/", "/ai", "/editor", "/embed", "/manifest.json", "/sw.js", "/P.svg", "/icon.svg"];
 
 self.addEventListener("install", function(e) {
-    // Cache each page on its own. One blocked page must never stop the install,
-    // so the rest of the app still gets cached and works offline.
+    
+    
     e.waitUntil(
         caches.open(CACHE).then(function(c) {
             return Promise.all(PAGES.map(function(p) {
@@ -2277,16 +2277,16 @@ self.addEventListener("fetch", function(e) {
     if (url.indexOf("/api/") !== -1 || url.indexOf("challenges.cloudflare.com") !== -1) return;
     var isNav = e.request.mode === "navigate";
 
-    // Never show a browser error page - always have a fallback ready.
+    
     function fallback() {
         return caches.match("/").then(function(h) {
             return h || new Response(OFFLINE_PAGE, { headers: { "Content-Type": "text/html" } });
         });
     }
 
-    // Page navigations: serve the cached copy instantly (no waiting), and
-    // refresh it in the background. If both fail, fall back to the cached
-    // home page, then to the built-in offline page.
+    
+    
+    
     if (isNav) {
         e.respondWith(
             caches.match(e.request).then(function(cached) {
@@ -2302,7 +2302,7 @@ self.addEventListener("fetch", function(e) {
         return;
     }
 
-    // Everything else (static assets): cache-first with network fallback.
+    
     e.respondWith(
         caches.match(e.request).then(function(r) {
             return r || fetch(e.request).then(function(resp) {
