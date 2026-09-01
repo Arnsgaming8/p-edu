@@ -1,0 +1,46 @@
+29 <meta name="viewport" content="width=device-width, initial-scale=1">
+30 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+520     label.className = 'msg-label';
+573     addMessage('ai', 'Fresh session - private to this device. Ask me anything.');
+674         <p>Three tools in one rough-draft workspace:</p>
+675         <div class="card-grid">
+678                 <p>Chat with friends - pick a username, no accounts, and every message disappears the next day.</p>
+682                 <p>Chat with a free AI - every message runs through OpenRouter's free model at zero cost.</p>
+686                 <p>Type HTML and render it live in a sandboxed black-green preview. No accounts.</p>
+701         <p>Free only - every chat runs through OpenRouter's <code>openrouter/free</code> model at zero cost.</p>
+702         <p class="ephemeral-note">Each device gets its own private conversation - the AI only ever sees this chat.</p>
+703         <p class="ephemeral-note">Every message is scanned - profanity, sexual content, slurs, self-harm, and drug talk are blocked automatically.</p>
+704         <div class="model-row">
+711         <div class="chat-log" id="chatLog"></div>
+712         <div class="chat-input-row">
+731         <div class="runner-toolbar">
+734             <button id="runBtn" style="margin-top:0;">Run ▶</button>
+736         <div class="runner-grid">
+737             <div class="runner-editor">
+739                     <div class="panel-head">
+746             <div class="runner-preview">
+748                     <div class="panel-head">
+934             setStatus("Offline - can't reach the chat");
+953         badge.className = 'conv-badge' + (un > 0 && state.activeId !== c.id ? ' show' : '');
+999             setStatus("Couldn't send - try again");
+1015     setStatus('Chatting as ' + name + ' \u00b7 direct private chats \u00b7 messages auto-delete every day');
+1126         <h1>Friends Chat <span class="ephemeral-note">- every message disappears the next day</span></h1>
+1127         <div id="nameScreen" class="name-screen">
+1129             <p>No accounts - pick a name and start chatting with friends. Every message disappears the next day.</p>
+1133             <div class="name-error" id="nameError"></div>
+1136         <div class="chat-box" id="chatBox" style="display:none;">
+1137             <div class="chat-sidebar" id="sidebar">
+1138                 <div class="sidebar-head">
+1139                     <div class="btn-row">
+1143                 <div class="conv-list" id="convList"></div>
+1144                 <div class="sidebar-foot">
+1148             <div class="chat-main">
+1149                 <div class="chat-topbar">
+1151                     <div class="conv-title" id="convTitle">Select a conversation</div>
+1154                 <div class="chat-log" id="chatLog"></div>
+1155                 <div class="chat-input-row" id="inputRow" style="display:none;">
+1159                 <div class="chat-status" id="chatStatus"></div>
+1163             <div class="overlay-card">
+1166                 <div class="search-results" id="searchResults"></div>
+1510         detail = e.read().decode("utf-8", errors="replace")[:300]
+1599                 "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23050a05' width='100' height='100' rx='20'/><text x=

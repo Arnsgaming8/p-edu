@@ -1,0 +1,11 @@
+# Real account registry - contains API keys, never commit
+omniroute-accounts/accounts.json
+
+# Python
+__pycache__/
+
+# Local env (API keys) and Vercel project state
+.env
+.vercel
+
+.vercel
