@@ -22,17 +22,14 @@ var _logErr = 0;
 
 /* ---- persistence ---- */
 function loadBufs() {
-    try {
-        var s = JSON.parse(localStorage.getItem(KEY) || 'null');
-        if (s && typeof s === 'object') {
-            if (typeof s.html === 'string') buffers.html = s.html;
-            if (typeof s.css === 'string') buffers.css = s.css;
-            if (typeof s.js === 'string') buffers.js = s.js;
-        }
-    } catch (e) {}
+    // Code never persists: every page load starts fresh and wipes any saved buffers.
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    buffers.html = HTML_DEFAULT;
+    buffers.css = '';
+    buffers.js = '';
 }
 function saveBufs() {
-    try { localStorage.setItem(KEY, JSON.stringify(buffers)); } catch (e) {}
+    try { localStorage.removeItem(KEY); } catch (e) {}
 }
 var _saveT = null;
 function scheduleSave() { clearTimeout(_saveT); _saveT = setTimeout(saveBufs, 400); }
