@@ -344,6 +344,23 @@ select option { background: #000; color: var(--green); }
 .msg-body th, .msg-body td { border: 1px solid var(--border); padding: 5px 8px; text-align: left; vertical-align: top; }
 .msg-body th { background: rgba(0,255,65,.08); color: var(--green); text-transform: uppercase; letter-spacing: 1px; font-size: 11px; font-weight: 600; }
 .msg-body tbody tr:nth-child(even) td { background: rgba(0,255,65,.03); }
+.msg-body mark { background: rgba(0,255,65,.28); color: #000; padding: 0 3px; border-radius: 2px; }
+.msg-body del { color: var(--muted); }
+.msg-body sub, .msg-body sup { font-size: 11px; color: var(--green); }
+.msg-body kbd { background: var(--bg3); border: 1px solid var(--border); border-bottom-width: 2px; padding: 1px 5px; font-family: 'Cascadia Code', Consolas, monospace; font-size: 11px; color: var(--green); }
+.msg-body hr { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
+.msg-body ol { margin: 4px 0; padding-left: 22px; }
+.msg-body li input[type=checkbox] { accent-color: var(--green); margin-right: 6px; vertical-align: middle; }
+.msg-body dl { margin: 6px 0; }
+.msg-body dt { color: var(--green); font-weight: 600; }
+.msg-body dd { margin: 0 0 4px 18px; color: var(--muted); }
+.msg-body img { max-width: 100%; border: 1px solid var(--border); margin: 6px 0; }
+.msg-body .fn-def { font-size: 12px; color: var(--muted); border-top: 1px dashed var(--border); margin-top: 8px; padding-top: 6px; }
+.msg-body .fn { color: var(--green); font-weight: 700; }
+.chat-hints { display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 6px 12px; font-size: 11px; color: var(--muted); border-top: 1px solid var(--border); background: var(--bg2); }
+.chat-hints kbd { background: var(--bg3); border: 1px solid var(--border); border-bottom-width: 2px; padding: 1px 5px; font-family: 'Cascadia Code', Consolas, monospace; font-size: 10px; color: var(--green); }
+.copy-toast { position: fixed; bottom: 88px; left: 50%; transform: translateX(-50%); background: var(--bg3); border: 1px solid var(--green); color: var(--green); padding: 6px 14px; font-size: 12px; z-index: 2000; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.copy-toast.show { opacity: 1; }
 .msg-body table code { font-size: 12px; }
 .msg-body blockquote {
     border-left: 3px solid var(--green);
@@ -839,11 +856,25 @@ function escHtml(s) {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 function inlineMd(s) {
-    return s
-        .replace(/`([^`]+)`/g, '<code>$1</code>')
-        .replace(/\\*\\*([^*]+)\\*\\*/g, '<strong>$1</strong>')
-        .replace(/\\*([^*]+)\\*/g, '<em>$1</em>')
-        .replace(/\\[([^\\]]+)\\]\\((https?:\\/\\/[^\\s)]+)\\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    s = s.replace(/&amp;nbsp;/g, '\\u00a0');
+    s = s.replace(/&lt;kbd&gt;/g, '<kbd>').replace(/&lt;\\/kbd&gt;/g, '</kbd>');
+    s = s.replace(/&lt;br\\s*\\/?&gt;/gi, '<br>');
+    s = s.replace(/&lt;abbr title=&quot;([^&]*)&quot;&gt;/g, '<abbr title="$1">').replace(/&lt;\\/abbr&gt;/g, '</abbr>');
+    s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+    s = s.replace(/\\*\\*\\*([^*]+)\\*\\*\\*/g, '<strong><em>$1</em></strong>');
+    s = s.replace(/\\*\\*([^*]+)\\*\\*/g, '<strong>$1</strong>');
+    s = s.replace(/\\*([^*]+)\\*/g, '<em>$1</em>');
+    s = s.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+    s = s.replace(/(^|[^A-Za-z0-9_])_([^_]+)_([^A-Za-z0-9_]|$)/g, '$1<em>$2</em>$3');
+    s = s.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+    s = s.replace(/==([^=]+)==/g, '<mark>$1</mark>');
+    s = s.replace(/\\^([^^\\s]+)\\^/g, '<sup>$1</sup>');
+    s = s.replace(/~([^~\\s]+)~/g, '<sub>$1</sub>');
+    s = s.replace(/!\\[([^\\]]*)\\]\\((https?:\\/\\/[^\\s)]+)(?:\\s+&quot;[^&]*&quot;)?\\)/g, '<img src="$2" alt="$1" loading="lazy">');
+    s = s.replace(/\\[([^\\]]+)\\]\\((https?:\\/\\/[^\\s)]+)(?:\\s+&quot;([^&]*)&quot;)?\\)/g, '<a href="$2" title="$3" target="_blank" rel="noopener noreferrer">$1</a>');
+    s = s.replace(/&lt;(https?:\\/\\/[^&]+)&gt;/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+    s = s.replace(/\\[\\^([0-9]+)\\]/g, '<sup class="fn">$1</sup>');
+    return s;
 }
 function renderMarkdown(md) {
     if (!md) return '';
@@ -853,7 +884,6 @@ function renderMarkdown(md) {
     var inCode = false;
     var codeBuf = [];
     var codeLang = '';
-    var listOpen = false;
     for (i = 0; i < lines.length; i++) {
         var line = lines[i];
         if (line.indexOf('```') === 0) {
@@ -869,6 +899,8 @@ function renderMarkdown(md) {
             continue;
         }
         if (inCode) { codeBuf.push(line); continue; }
+        if (!line.trim()) continue;
+        if (isComment(line)) continue;
         if (tableLine(line) && i + 1 < lines.length && sepRow(lines[i + 1])) {
             var trows = [lineToCells(line)];
             while (i + 1 < lines.length && tableLine(lines[i + 1])) {
@@ -878,29 +910,112 @@ function renderMarkdown(md) {
             html += tableHtml(trows);
             continue;
         }
+        if (/^\\s*(?:-{3,}|\\*{3,}|_{3,})\\s*$/.test(line)) {
+            html += '<hr>';
+            continue;
+        }
+        var bq = /^(&gt;)+/.exec(line);
+        if (bq) {
+            var depth = Math.floor(bq[0].length / 4);
+            var rest = line.slice(bq[0].length).replace(/^\\s/, '');
+            var open = '';
+            for (var bi = 0; bi < depth; bi++) open += '<blockquote>';
+            var close = '';
+            for (var bj = 0; bj < depth; bj++) close += '</blockquote>';
+            html += open + '<p>' + inlineMd(rest) + '</p>' + close;
+            continue;
+        }
+        var fn = /^\\[\\^([0-9]+)\\]:\\s*(.*)/.exec(line);
+        if (fn) {
+            html += '<div class="fn-def"><sup>' + fn[1] + '</sup> ' + inlineMd(fn[2]) + '</div>';
+            continue;
+        }
+        if (i + 1 < lines.length && /^[ \\t]*:[ \\t]+/.test(lines[i + 1])) {
+            html += '<dl><dt>' + inlineMd(line.trim()) + '</dt><dd>' + inlineMd(lines[i + 1].trim().replace(/^:[ \\t]+/, '')) + '</dd></dl>';
+            i++;
+            continue;
+        }
         var h = line.match(/^(#{1,6})\\s+(.*)/);
         if (h) {
             html += '<h' + h[1].length + '>' + inlineMd(h[2]) + '</h' + h[1].length + '>';
             continue;
         }
-        if (line.indexOf('&gt;') === 0) {
-            html += '<blockquote>' + inlineMd(line.replace(/^&gt;\\s?/, '')) + '</blockquote>';
+        if (isListLine(line)) {
+            var lr = renderList(lines, i);
+            html += lr.html;
+            i = lr.next - 1;
             continue;
         }
-        var li = line.match(/^\\s*[-*]\\s+(.*)/) || line.match(/^\\s*\\d+\\.\\s+(.*)/);
-        if (li) {
-            if (!listOpen) { html += '<ul>'; listOpen = true; }
-            html += '<li>' + inlineMd(li[1]) + '</li>';
-            continue;
+        var para = [line];
+        while (i + 1 < lines.length && !specialLine(lines[i + 1]) && !(i + 2 < lines.length && /^[ \t]*:[ \t]+/.test(lines[i + 2]))) {
+            para.push(lines[i + 1]);
+            i++;
         }
-        if (listOpen) { html += '</ul>'; listOpen = false; }
-        if (!line.trim()) continue;
-        html += '<p>' + inlineMd(line) + '</p>';
+        var joined = '';
+        var prevHard = false;
+        for (var pi = 0; pi < para.length; pi++) {
+            var hard = / {2,}$/.test(para[pi]);
+            var t = inlineMd(para[pi].replace(/ {2,}$/, ''));
+            if (pi) joined += prevHard ? '<br>' : ' ';
+            joined += t;
+            prevHard = hard;
+        }
+        html += '<p>' + joined + '</p>';
     }
     if (inCode) html += codeBlock(codeBuf.join('\\n'), codeLang);
-    if (listOpen) html += '</ul>';
     return html;
+}function isComment(l) {
+    if (l.indexOf('&lt;!--') === 0) return true;
+    return /^[ \\t]*\\[?\\/\\/\\][ \\t]*:?#?/.test(l);
 }
+function specialLine(l) {
+    if (!l) return true;
+    if (l.indexOf('```') === 0) return true;
+    if (l.charAt(0) === '|' || l.charAt(l.length - 1) === '|') return true;
+    if (/^#{1,6}\\s/.test(l)) return true;
+    if (/^&gt;/.test(l)) return true;
+    if (/^\\s*(?:-{3,}|\\*{3,}|_{3,})\\s*$/.test(l)) return true;
+    if (/^[ \\t]*:[ \\t]+/.test(l)) return true;
+    if (/^\[\^[0-9]+\]:/.test(l)) return true;
+    if (isListLine(l)) return true;
+    if (isComment(l)) return true;
+    return false;
+}
+function isListLine(l) {
+    return /^[ \\t]*(?:[-*+]|\\d+\\.)\\s+(?:\\[[ xX]\\]\\s+)?/.test(l);
+}
+function renderList(lines, start) {
+    var html = '';
+    var stack = [];
+    var i = start;
+    while (i < lines.length && isListLine(lines[i])) {
+        var m = /^([ \\t]*)([-*+]|\\d+\\.)\\s+(?:\\[([ xX])\\]\\s+)?(.*)$/.exec(lines[i]);
+        var indent = m[1].replace(/\\t/g, '    ').length;
+        var isOl = /^\\d/.test(m[2]);
+        var checked = m[3];
+        var content = m[4] || '';
+        while (stack.length && indent < stack[stack.length - 1].indent) {
+            html += '</' + stack.pop().tag + '>';
+        }
+        if (stack.length && indent === stack[stack.length - 1].indent && isOl !== (stack[stack.length - 1].tag === 'ol')) {
+            html += '</' + stack.pop().tag + '>';
+        }
+        if (!stack.length || indent > stack[stack.length - 1].indent) {
+            var tag = isOl ? 'ol' : 'ul';
+            html += '<' + tag + '>';
+            stack.push({ indent: indent, tag: tag });
+        }
+        var item = '';
+        if (checked !== undefined) {
+            item = '<input type="checkbox" disabled' + (checked === 'x' || checked === 'X' ? ' checked' : '') + '> ';
+        }
+        html += '<li>' + item + inlineMd(content) + '</li>';
+        i++;
+    }
+    while (stack.length) { html += '</' + stack.pop().tag + '>'; }
+    return { html: html, next: i };
+}
+
 function sepRow(l) {
     if (l.indexOf('-') === -1) return false;
     if (l.indexOf('|') === -1) return false;
@@ -1038,24 +1153,64 @@ fetch('/api/ai/status').then(function (r) { return r.json(); }).then(function (d
     }
 });
 
-chatLog.addEventListener('click', function (ev) {
-    var btn = ev.target.closest('.copy-btn');
-    if (!btn) return;
-    var txt = btn.closest('.code-block').querySelector('pre').textContent;
-    btn.textContent = 'copied';
-    function restore() { setTimeout(function () { btn.textContent = 'copy'; }, 1500); }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(txt).then(restore, restore);
-    } else {
+function copyText(txt, cb) {
+    function legacy(t) {
         var ta = document.createElement('textarea');
-        ta.value = txt;
+        ta.value = t;
         ta.style.position = 'fixed';
         ta.style.opacity = '0';
         document.body.appendChild(ta);
         ta.select();
         try { document.execCommand('copy'); } catch (e2) {}
         document.body.removeChild(ta);
-        restore();
+    }
+    var ok = function () { if (cb) cb(); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(ok, function () { legacy(txt); ok(); });
+    } else {
+        legacy(txt);
+        ok();
+    }
+}
+var toastTimer;
+function toast(msg) {
+    var el = document.getElementById('copyToast');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'copyToast';
+        el.className = 'copy-toast';
+        document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove('show'); }, 1800);
+}
+chatLog.addEventListener('click', function (ev) {
+    var btn = ev.target.closest('.copy-btn');
+    if (!btn) return;
+    var txt = btn.closest('.code-block').querySelector('pre').textContent;
+    btn.textContent = 'copied';
+    setTimeout(function () { btn.textContent = 'copy'; }, 1500);
+    copyText(txt);
+});
+document.addEventListener('keydown', function (e) {
+    var mod = e.ctrlKey || e.metaKey;
+    if (mod && (e.key === 'c' || e.key === 'C')) {
+        if (document.activeElement === chatInput) {
+            if (chatInput.selectionStart !== chatInput.selectionEnd) return;
+        } else {
+            var sel = window.getSelection ? String(window.getSelection()) : '';
+            if (sel.length) return;
+        }
+        e.preventDefault();
+        var msgs = chatLog.querySelectorAll('.msg.ai .msg-body');
+        if (!msgs.length) return;
+        copyText(msgs[msgs.length - 1].textContent, function () { toast('Last AI reply copied'); });
+        return;
+    }
+    if (e.key === 'Escape' && document.activeElement === chatInput) {
+        chatInput.value = '';
     }
 });
 """
@@ -1285,6 +1440,7 @@ ai_page = f"""
             <input type="text" id="chatInput" placeholder="Ask Platform AI something..." />
             <button id="sendBtn">Send</button>
         </div>
+        <div class="chat-hints"><kbd>Ctrl</kbd>+<kbd>C</kbd> copy reply &middot; <kbd>Enter</kbd> send &middot; <kbd>Esc</kbd> clear</div>
     </section>
 </div>
 <script>
@@ -2441,7 +2597,7 @@ def pwa_manifest():
 def pwa_sw():
     from flask import Response
     sw = """
-var CACHE = "platform-v10";
+var CACHE = "platform-v11";
 var PAGES = ["/", "/art", "/math", "/english", "/manifest.json", "/sw.js", "/P.svg", "/icon.svg"];
 
 self.addEventListener("install", function(e) {
