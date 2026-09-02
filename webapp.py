@@ -1422,15 +1422,15 @@ home_page = f"""
         <h1>Welcome to the PLATFORM</h1>
         <p>Three tools in one rough draft workspace:</p>
         <div class="card-grid">
-            <a class="card" href="/embed">
+            <a class="card" href="/english">
                 <h2>Chat</h2>
                 <p>Chat with friends pick a username, no accounts, and every message disappears the next day.</p>
             </a>
-            <a class="card" href="/ai">
+            <a class="card" href="/art">
                 <h2>AI Studio</h2>
                 <p>Chat with a free AI every message runs through OpenRouter's free model at zero cost.</p>
             </a>
-            <a class="card" href="/editor">
+            <a class="card" href="/math">
                 <h2>HTML Runner</h2>
                 <p>Type HTML and render it live in a sandboxed black green preview. No accounts.</p>
             </a>
@@ -2621,7 +2621,7 @@ def pwa_manifest():
 def pwa_sw():
     from flask import Response
     sw = """
-var CACHE = "platform-v12";
+var CACHE = "platform-v13";
 var PAGES = ["/", "/art", "/math", "/english", "/manifest.json", "/sw.js", "/P.svg", "/icon.svg"];
 
 self.addEventListener("install", function(e) {
