@@ -2302,6 +2302,16 @@ def _check_ai_pass(value):
         return False
 
 
+def _ai_error_message(code, detail):
+    if code == 429:
+        return "The AI is busy right now (free tier is rate limited). Wait a moment and try again."
+    if code == 401 or code == 403:
+        return "The AI service rejected the API key. Check the AI_API_KEY environment variable."
+    if code >= 500:
+        return "The AI provider is having issues. Try again in a moment."
+    return f"AI provider returned HTTP {code}: {detail}"
+
+
 @app.route("/api/ai/chat", methods=["POST"])
 def ai_chat():
     data = request.get_json(force=True, silent=True) or {}
@@ -2402,24 +2412,50 @@ def ai_chat():
             headers=headers,
             method="POST",
         )
-        for attempt in range(3):
+        retry_deadline = time.time() + 40
+        attempt = 0
+        while time.time() < retry_deadline:
+            attempt += 1
             try:
                 with urllib.request.urlopen(req, timeout=50) as resp:
                     body = json.loads(resp.read().decode("utf-8"))
                 break
             except urllib.error.HTTPError as e:
                 last_error = e
-                detail = ""
+                full = ""
                 try:
-                    detail = e.read().decode("utf-8", errors="replace")[:300]
+                    full = e.read().decode("utf-8", errors="replace")
                 except Exception:
                     pass
+                detail = full[:300]
                 retriable = e.code in (408, 425, 429, 500, 502, 503, 504)
-                if not retriable or attempt == 2:
+                if not retriable:
                     if candidate == candidates[-1]:
-                        return jsonify({"error": f"AI provider returned HTTP {e.code}: {detail}"}), 502
+                        return jsonify({"error": _ai_error_message(e.code, detail)}), 502
                     break
-                time.sleep(0.6 * (attempt + 1))
+                wait = None
+                if e.code == 429:
+                    try:
+                        wait = float((json.loads(full).get("error") or {}).get("metadata", {}).get("retry_after_seconds", 0))
+                    except Exception:
+                        wait = None
+                    try:
+                        ha = e.headers.get("Retry-After") if e.headers else None
+                        if ha:
+                            wait = float(ha)
+                    except (TypeError, ValueError, AttributeError):
+                        pass
+                if not wait or wait <= 0 or wait > 12:
+                    wait = min(0.8 * attempt, 5)
+                if time.time() + wait >= retry_deadline:
+                    break
+                time.sleep(wait)
+            except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as e:
+                last_error = e
+                wait = min(0.8 * attempt, 5)
+                if time.time() + wait >= retry_deadline:
+                    break
+                time.sleep(wait)
             except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as e:
                 last_error = e
                 if attempt == 2:
@@ -2468,7 +2504,7 @@ def ai_chat():
         return jsonify(out)
     except urllib.error.HTTPError as e:
         detail = e.read().decode("utf-8", errors="replace")[:300]
-        return jsonify({"error": f"AI provider returned HTTP {e.code}: {detail}"}), 502
+        return jsonify({"error": _ai_error_message(e.code, detail)}), 502
     except Exception as e:
         return (
             jsonify(
