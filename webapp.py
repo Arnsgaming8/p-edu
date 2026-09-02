@@ -2670,7 +2670,7 @@ def pwa_manifest():
 def pwa_sw():
     from flask import Response
     sw = """
-var CACHE = "platform-v17";
+var CACHE = "platform-v18";
 var PAGES = ["/", "/art", "/math", "/english", "/manifest.json", "/sw.js", "/P.svg", "/icon.svg"];
 
 self.addEventListener("install", function(e) {
@@ -2700,6 +2700,7 @@ var OFFLINE_PAGE = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><
 
 self.addEventListener("fetch", function(e) {
     var url = e.request.url;
+    if (url.indexOf("http:") !== 0 && url.indexOf("https:") !== 0) return;
     if (url.indexOf("/api/") !== -1 || url.indexOf("challenges.cloudflare.com") !== -1) return;
     var isNav = e.request.mode === "navigate";
 
