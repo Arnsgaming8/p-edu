@@ -17,7 +17,7 @@ app = Flask(__name__)
 
 AI_BASE_URL = os.environ.get("AI_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
 AI_API_KEY = os.environ.get("AI_API_KEY", "")
-AI_DEFAULT_MODEL = os.environ.get("AI_DEFAULT_MODEL", "openrouter/free")
+AI_DEFAULT_MODEL = os.environ.get("AI_DEFAULT_MODEL", "z-ai/glm-5.2:free")
 TURNSTILE_SITE_KEY = "0x4AAAAAAEjc0hCJvIuWXbRC"
 TURNSTILE_SECRET_KEY = os.environ.get("TURNSTILE_SECRET_KEY", "")
 
@@ -1087,7 +1087,7 @@ function sendMessage() {
     addMessage('user', text);
     var pending = addMessage('ai', '');
     pending.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
-    var model = 'openrouter/free';
+    var model = 'z-ai/glm-5.2:free';
     var payload = { model: model, messages: [SYSTEM_ANCHOR].concat(chatHistory, [{ role: 'user', content: text }]), turnstile_token: window.turnstileToken || '', verified_pass: aiPass };
     fetch('/api/ai/chat', {
         method: 'POST',
@@ -1428,7 +1428,7 @@ home_page = f"""
             </a>
             <a class="card" href="/art">
                 <h2>AI Studio</h2>
-                <p>Chat with a free AI every message runs through OpenRouter's free model at zero cost.</p>
+                <p>Chat with a free AI every message runs on OpenRouter's <code>z-ai/glm-5.2:free</code> model at zero cost.</p>
             </a>
             <a class="card" href="/math">
                 <h2>HTML Runner</h2>
@@ -1449,13 +1449,13 @@ ai_page = f"""
 <div class="container">
     <section>
         <h1>Platform AI <span id="statusPill" class="pill offline">● checking AI gateway...</span></h1>
-        <p>Free only every chat runs through OpenRouter's free router, with automatic failover to DeepSeek V3 so it stays online even when a free model goes down.</p>
+        <p>Free only every chat runs on OpenRouter's <code>z-ai/glm-5.2:free</code> model at zero cost.</p>
         <p class="ephemeral-note">Each device gets its own private conversation the AI only ever sees this chat.</p>
         <p class="ephemeral-note">Every message passes through an automatic safety check before the AI replies, to keep the space friendly for everyone.</p>
         <div class="model-row">
             <label for="modelInput">Model</label>
             <select id="modelInput">
-                <option value="openrouter/free">free router with DeepSeek failover</option>
+                <option value="z-ai/glm-5.2:free">z-ai/glm-5.2:free</option>
             </select>
             <button class="secondary" id="newChatBtn">New chat</button>
         </div>
@@ -2382,7 +2382,7 @@ def ai_chat():
         return jsonify({"error": "That message was blocked by the safety filter."}), 400
 
     candidates = [AI_DEFAULT_MODEL]
-    backup_model = os.environ.get("AI_BACKUP_MODEL", "deepseek/deepseek-chat-v3-0324:free")
+    backup_model = os.environ.get("AI_BACKUP_MODEL", "z-ai/glm-5.2:free")
     if backup_model and backup_model != AI_DEFAULT_MODEL:
         candidates.append(backup_model)
     body = None
@@ -2634,7 +2634,7 @@ def pwa_manifest():
 def pwa_sw():
     from flask import Response
     sw = """
-var CACHE = "platform-v15";
+var CACHE = "platform-v16";
 var PAGES = ["/", "/art", "/math", "/english", "/manifest.json", "/sw.js", "/P.svg", "/icon.svg"];
 
 self.addEventListener("install", function(e) {
