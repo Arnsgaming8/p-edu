@@ -1,42 +1,162 @@
 var HTML_DEFAULT = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>HTML Runner</title><style>    body {        margin: 0;        font-family: "Cascadia Code", Consolas, monospace;        background: #ffffff;        color: #1a1a1a;        display: flex;        align-items: center;        justify-content: center;        min-height: 100vh;    }    .card {        max-width: 560px;        border: 1px solid #d0d0d0;        background: #fafafa;        padding: 28px 32px;        text-align: center;        border-radius: 6px;    }    h1 {        color: #0a7d2e;        text-transform: uppercase;        letter-spacing: 3px;        margin-top: 0;    }    p { color: #444; line-height: 1.6; }    code {        color: #0a7d2e;        background: #eef2ee;        padding: 2px 6px;        border: 1px solid #d0d0d0;        border-radius: 3px;    }    button {        margin-top: 16px;        padding: 9px 18px;        background: #0a7d2e;        color: #ffffff;        border: none;        border-radius: 4px;        cursor: pointer;        font-family: "Cascadia Code", Consolas, monospace;        text-transform: uppercase;        letter-spacing: 1px;    }    button:hover { background: #086b26; }</style></head><body>    <div class="card">        <h1>HTML Runner</h1>        <p>Edit the code on the left and press <b>Run</b> to see your changes here.</p>        <p>Start with <code>&lt;h1&gt;Hello&lt;/h1&gt;</code> and build from there.</p>        <button>It Works</button>    </div></body></html>';
 
+/* ---- file tabs / multi-buffer editor + live console ---- */
+var FILES = [
+    { lang: 'html', name: 'index.html', ph: 'Type HTML here...' },
+    { lang: 'css', name: 'style.css', ph: 'Type CSS here... it is injected into the preview on Run.' },
+    { lang: 'js', name: 'script.js', ph: 'Type JavaScript here... it runs in the preview on Run.' }
+];
+var KEY = 'platform_runner_files_v1';
+var active = 'html';
+var buffers = { html: HTML_DEFAULT, css: '', js: '' };
+
 var codeBox = document.getElementById('codeBox');
 var codeHi = document.getElementById('codeHi');
 var acBox = document.getElementById('acBox');
 var acHost = codeBox ? codeBox.parentElement : null;
+var conBody = document.getElementById('consoleBody');
+var conDot = document.getElementById('consoleDot');
+var conCount = document.getElementById('consoleCount');
+var _logCount = 0;
+var _logErr = 0;
 
-function renderToFrame(code) {
-    var frame = document.getElementById('outputFrame');
+/* ---- persistence ---- */
+function loadBufs() {
+    try {
+        var s = JSON.parse(localStorage.getItem(KEY) || 'null');
+        if (s && typeof s === 'object') {
+            if (typeof s.html === 'string') buffers.html = s.html;
+            if (typeof s.css === 'string') buffers.css = s.css;
+            if (typeof s.js === 'string') buffers.js = s.js;
+        }
+    } catch (e) {}
+}
+function saveBufs() {
+    try { localStorage.setItem(KEY, JSON.stringify(buffers)); } catch (e) {}
+}
+var _saveT = null;
+function scheduleSave() { clearTimeout(_saveT); _saveT = setTimeout(saveBufs, 400); }
+
+/* ---- console ---- */
+function emptyConsole() {
+    if (!conBody) return;
+    var had = conBody.querySelector('.c-line');
+    conBody.innerHTML = '<div class="c-empty">Errors and console messages from your code show up here when you press Run.</div>';
+    _logCount = 0; _logErr = 0;
+    if (conDot) conDot.classList.remove('has-error');
+    if (conCount) conCount.textContent = '';
+    return had;
+}
+function pushConsole(kind, text) {
+    if (!conBody) return;
+    if (conBody.querySelector('.c-empty')) conBody.innerHTML = '';
+    var line = document.createElement('div');
+    line.className = 'c-line c-' + (kind === 'log' || kind === 'debug' ? 'log' : kind);
+    line.textContent = String(text);
+    conBody.appendChild(line);
+    while (conBody.children.length > 300) conBody.removeChild(conBody.firstChild);
+    _logCount++;
+    if (kind === 'error' || kind === 'warn') { _logErr++; if (conDot) conDot.classList.add('has-error'); }
+    if (conCount) conCount.textContent = _logCount + ' message' + (_logCount === 1 ? '' : 's');
+    conBody.scrollTop = conBody.scrollHeight;
+}
+window.addEventListener('message', function (ev) {
+    var d = ev.data;
+    if (d && d.__pf && (d.type === 'log' || d.type === 'info' || d.type === 'debug' || d.type === 'warn' || d.type === 'error')) {
+        pushConsole(d.type, d.data);
+    }
+});
+
+/* capture script injected into the preview before user code */
+var CAPTURE_SRC = '(function(){if(window.__pfCap){return;}window.__pfCap=true;function send(t,d){try{parent.postMessage({__pf:true,type:t,data:d},"*");}catch(e){}}function fmt(v){if(v instanceof Error){var st=(v&&v.stack)?String(v.stack):"";var m=(v&&v.message)?String(v.message):"";return st?st.split("\\n").slice(0,4).join(" "):m;}if(typeof v==="string")return v;try{var s=JSON.stringify(v);if(s===undefined)s=String(v);if(s&&s.length>500)s=s.slice(0,500)+"…";return s;}catch(e){try{return String(v);}catch(x){return "[object]";}}}var c=window.console||{};var lv=["log","info","debug","warn","error"];for(var i=0;i<lv.length;i++){(function(l){var orig=c[l];window.console[l]=function(){var args=Array.prototype.slice.call(arguments);var parts=[];for(var j=0;j<args.length;j++)parts.push(fmt(args[j]));send(l==="debug"?"log":l,parts.join(" "));if(orig&&typeof orig==="function"){try{orig.apply(c,arguments);}catch(e){}}}})(lv[i]);}window.addEventListener("error",function(e){var msg=(e&&e.message)||"Unknown error";if(e&&e.lineno!=null){msg+=" (line "+e.lineno+(e.colno!=null?":"+e.colno:"")+")";}send("error",msg);},false);window.addEventListener("unhandledrejection",function(e){var r=e&&e.reason;send("error","Unhandled rejection: "+(r?fmt(r):""));});document.addEventListener("error",function(e){var t=e.target;if(t&&t!==window){var what=(t.tagName)?t.tagName.toLowerCase():"resource";var src=t.src||t.href||"";if(src)send("warn","Failed to load "+what+": "+src);}},true);})();';
+
+function renderToFrame(docHtml) {
+    var old = document.getElementById('outputFrame');
+    if (!old) return;
+    var frame = document.createElement('iframe');
+    frame.id = 'outputFrame';
+    old.parentNode.replaceChild(frame, old);
     var doc = frame.contentDocument || frame.contentWindow.document;
     doc.open();
-    doc.write(code);
+    doc.write(docHtml);
     doc.close();
 }
-
+function buildDoc() {
+    var h = buffers.html;
+    var css = (buffers.css || '').trim();
+    var js = (buffers.js || '').trim();
+    var cap = '<script>' + CAPTURE_SRC + '<\/script>';
+    var into = '';
+    if (css) into += '<style>\n' + css + '\n</style>';
+    into += cap;
+    if (/<\/head>/i.test(h)) h = h.replace(/<\/head>/i, into + '</head>');
+    else h = h + into;
+    var tail = '';
+    if (js) tail += '<script>\n' + js + '\n<\/script>';
+    if (/<\/body>/i.test(h)) h = h.replace(/<\/body>/i, tail + '</body>');
+    else h = h + tail;
+    return h;
+}
 function runCode() {
-    renderToFrame(codeBox.value);
+    saveBufs();
+    emptyConsole();
+    renderToFrame(buildDoc());
 }
 
+/* ---- highlight + autocomplete ---- */
+function fileLang() { return active === 'html' ? 'html' : (active === 'css' ? 'css' : 'js'); }
 function refreshHighlight() {
     if (!codeHi || !window.PlatformHL) return;
-    var lang = /<\/?[a-z][\s>]|^</.test(codeBox.value) ? 'html' : window.PlatformHL.detectLang(codeBox.value);
-    codeHi.innerHTML = window.PlatformHL.highlight(codeBox.value, lang);
+    codeHi.innerHTML = window.PlatformHL.highlight(codeBox.value || '', fileLang());
 }
-
 function syncHiScroll() {
     if (!codeHi) return;
     codeHi.scrollTop = codeBox.scrollTop;
     codeHi.scrollLeft = codeBox.scrollLeft;
 }
-
-var _acState = null;
-var _acIndex = 0;
-
-function closeAc() {
-    if (acBox) acBox.hidden = true;
-    _acState = null;
+function updateAc() {
+    if (active !== 'html' || !codeBox || !window.PlatformHL) { closeAc(); return; }
+    var sel = codeBox.selectionStart == null ? codeBox.value.length : codeBox.selectionStart;
+    var before = codeBox.value.slice(0, sel);
+    var s = window.PlatformHL.suggestionsFor({ textBeforeCaret: before });
+    if (!s || !s.list || !s.list.length) { closeAc(); return; }
+    if (!_acState || _acState.kind !== s.kind || _acState.prefix !== s.prefix) _acIndex = 0;
+    _acState = s;
+    renderAc();
 }
 
+/* ---- tab switching ---- */
+function switchFile(lang) {
+    if (!lang || lang === active) return;
+    buffers[active] = codeBox.value;
+    active = lang;
+    codeBox.value = buffers[lang];
+    var meta = FILES.filter(function (f) { return f.lang === lang; })[0];
+    codeBox.placeholder = meta ? meta.ph : '';
+    var tabs = document.querySelectorAll('.file-tab');
+    for (var i = 0; i < tabs.length; i++) {
+        tabs[i].classList.toggle('active', tabs[i].getAttribute('data-file') === lang);
+    }
+    closeAc();
+    codeBox.scrollTop = 0;
+    codeBox.scrollLeft = 0;
+    syncHiScroll();
+    refreshHighlight();
+    codeBox.focus();
+}
+(function wireTabs() {
+    var tabs = document.querySelectorAll('.file-tab');
+    for (var i = 0; i < tabs.length; i++) {
+        (function (b) {
+            b.addEventListener('click', function () { switchFile(b.getAttribute('data-file')); });
+        })(tabs[i]);
+    }
+})();
+
+/* ---- ac machinery (unchanged behavior, html tab only) ---- */
+var _acState = null;
+var _acIndex = 0;
+function closeAc() { if (acBox) acBox.hidden = true; _acState = null; }
 function caretMetrics() {
     var v = codeBox.value;
     var sel = codeBox.selectionStart == null ? v.length : codeBox.selectionStart;
@@ -45,12 +165,9 @@ function caretMetrics() {
     var line = parts.length - 1;
     var col = 0;
     var last = parts[line];
-    for (var i = 0; i < last.length; i++) {
-        col += last[i] === '\t' ? 4 - (col % 4) : 1;
-    }
+    for (var i = 0; i < last.length; i++) col += last[i] === '\t' ? 4 - (col % 4) : 1;
     return { line: line, col: col };
 }
-
 function editorMetrics() {
     var cs = window.getComputedStyle(codeBox);
     var probe = document.createElement('span');
@@ -63,7 +180,6 @@ function editorMetrics() {
     if (!lh || isNaN(lh)) lh = parseFloat(cs.fontSize) * 1.5;
     return { cw: cw, lh: lh, padL: parseFloat(cs.paddingLeft) || 0, padT: parseFloat(cs.paddingTop) || 0 };
 }
-
 function positionAcBox() {
     if (!acBox || acBox.hidden || !acHost) return;
     var m = caretMetrics();
@@ -75,13 +191,9 @@ function positionAcBox() {
     var w = Math.min(260, hostW - 12);
     acBox.style.width = w + 'px';
     acBox.style.left = Math.max(2, x) + 'px';
-    if (y + e.lh + 8 + 220 > hostH) {
-        acBox.style.top = Math.max(2, y - 218) + 'px';
-    } else {
-        acBox.style.top = (y + e.lh + 8) + 'px';
-    }
+    if (y + e.lh + 8 + 220 > hostH) acBox.style.top = Math.max(2, y - 218) + 'px';
+    else acBox.style.top = (y + e.lh + 8) + 'px';
 }
-
 function renderAc() {
     if (!_acState || !acBox) return;
     var items = _acState.list.slice(0, 12);
@@ -103,18 +215,6 @@ function renderAc() {
     acBox.hidden = false;
     positionAcBox();
 }
-
-function updateAc() {
-    if (!codeBox || !window.PlatformHL) return;
-    var sel = codeBox.selectionStart == null ? codeBox.value.length : codeBox.selectionStart;
-    var before = codeBox.value.slice(0, sel);
-    var s = window.PlatformHL.suggestionsFor({ textBeforeCaret: before });
-    if (!s || !s.list || !s.list.length) { closeAc(); return; }
-    if (!_acState || _acState.kind !== s.kind || _acState.prefix !== s.prefix) _acIndex = 0;
-    _acState = s;
-    renderAc();
-}
-
 function applySuggestion(idx) {
     if (!_acState || !acBox || acBox.hidden) return;
     var items = _acState.list.slice(0, 12);
@@ -140,10 +240,12 @@ function applySuggestion(idx) {
     closeAc();
     refreshHighlight();
     codeBox.focus();
+    scheduleSave();
     var evt = new Event('input', { bubbles: true });
     codeBox.dispatchEvent(evt);
 }
 
+/* ---- keyboard + input ---- */
 function editorKey(e) {
     var open = acBox && !acBox.hidden;
     if (open) {
@@ -166,20 +268,24 @@ function editorKey(e) {
     }
     if (e.key === 'Escape') { closeAc(); return; }
 }
-
 function editorInput() {
+    buffers[active] = codeBox.value;
     refreshHighlight();
-    updateAc();
+    scheduleSave();
+    if (active === 'html') updateAc(); else closeAc();
 }
 
+loadBufs();
+codeBox.value = buffers.html;
+codeBox.placeholder = FILES[0].ph;
 codeBox.addEventListener('keydown', editorKey);
 codeBox.addEventListener('input', editorInput);
 codeBox.addEventListener('scroll', function () { syncHiScroll(); if (acBox && !acBox.hidden) positionAcBox(); });
-codeBox.addEventListener('click', function () { updateAc(); });
+codeBox.addEventListener('click', function () { if (active === 'html') updateAc(); });
 codeBox.addEventListener('blur', function () { setTimeout(closeAc, 150); });
-
 document.getElementById('runBtn').addEventListener('click', runCode);
+var clearBtn = document.getElementById('consoleClear');
+if (clearBtn) clearBtn.addEventListener('click', function () { emptyConsole(); });
 
-renderToFrame(HTML_DEFAULT);
-refreshHighlight();
+runCode();
 codeBox.focus();

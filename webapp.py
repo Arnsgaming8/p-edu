@@ -69,6 +69,8 @@ css = """
     --red: #ff4444;
     --amber: #ffb454;
     --highlight: #eaff00;
+    --codebg: #000;
+    --neon: #00ff41;
 }
 * { box-sizing: border-box; }
 body {
@@ -77,8 +79,8 @@ body {
     background: var(--bg);
     color: var(--text);
     background-image:
-        linear-gradient(rgba(0,255,65,.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0,255,65,.025) 1px, transparent 1px);
+        linear-gradient(color-mix(in srgb, var(--neon) 2.5%, transparent) 1px, transparent 1px),
+        linear-gradient(90deg, color-mix(in srgb, var(--neon) 2.5%, transparent) 1px, transparent 1px);
     background-size: 44px 44px;
 }
 ::selection { background: var(--green); color: #000; }
@@ -92,7 +94,7 @@ header {
     color: var(--green);
     letter-spacing: 3px;
     text-transform: uppercase;
-    text-shadow: 0 0 10px rgba(0,255,65,.45);
+    text-shadow: 0 0 10px color-mix(in srgb, var(--neon) 45%, transparent);
 }
 header::after {
     content: '\u258a';
@@ -105,7 +107,7 @@ header::after {
     width: 110px;
     height: 110px;
     margin: 0 auto 6px;
-    filter: drop-shadow(0 0 16px rgba(0,255,65,.35));
+    filter: drop-shadow(0 0 16px color-mix(in srgb, var(--neon) 35%, transparent));
 }
 @keyframes blink {
     50% { opacity: 0; }
@@ -128,7 +130,7 @@ nav a {
 }
 nav a:hover {
     color: var(--green);
-    text-shadow: 0 0 8px rgba(0,255,65,.6);
+    text-shadow: 0 0 8px color-mix(in srgb, var(--neon) 60%, transparent);
 }
 .container {
     padding: 20px;
@@ -138,7 +140,7 @@ nav a:hover {
 textarea {
     width: 100%;
     height: 200px;
-    background: #000;
+    background: var(--codebg);
     color: var(--green);
     border: 1px solid var(--border);
     padding: 10px;
@@ -165,7 +167,7 @@ button {
 button:hover {
     background: var(--green);
     color: #000;
-    box-shadow: 0 0 12px rgba(0,255,65,.5);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--neon) 50%, transparent);
 }
 button.secondary {
     border-color: var(--muted);
@@ -180,7 +182,7 @@ iframe {
     width: 100%;
     height: 300px;
     margin-top: 20px;
-    background: #000;
+    background: var(--codebg);
     border: 1px solid var(--border);
 }
 section {
@@ -188,7 +190,7 @@ section {
     border-bottom: 1px solid var(--border);
     padding-bottom: 20px;
 }
-h1, h2, h3 { color: var(--green); text-shadow: 0 0 8px rgba(0,255,65,.3); }
+h1, h2, h3 { color: var(--green); text-shadow: 0 0 8px color-mix(in srgb, var(--neon) 30%, transparent); }
 
 .card-grid {
     display: flex;
@@ -212,7 +214,7 @@ h1, h2, h3 { color: var(--green); text-shadow: 0 0 8px rgba(0,255,65,.3); }
 .card h2::before { content: '> '; color: var(--muted); }
 .card:hover {
     border-color: var(--green);
-    box-shadow: 0 0 14px rgba(0,255,65,.25), inset 0 0 14px rgba(0,255,65,.05);
+    box-shadow: 0 0 14px color-mix(in srgb, var(--neon) 25%, transparent), inset 0 0 14px color-mix(in srgb, var(--neon) 5%, transparent);
 }
 
 label {
@@ -224,7 +226,7 @@ label {
     letter-spacing: 1px;
 }
 input[type=text], input[type=password], input[type=number], select {
-    background: #000;
+    background: var(--codebg);
     color: var(--green);
     border: 1px solid var(--border);
     padding: 8px;
@@ -234,7 +236,7 @@ input[type=text], input[type=password], input[type=number], select {
     caret-color: var(--green);
 }
 input::placeholder { color: var(--muted); }
-select option { background: #000; color: var(--green); }
+select option { background: var(--codebg); color: var(--green); }
 .row {
     display: flex;
     gap: 12px;
@@ -259,8 +261,8 @@ select option { background: #000; color: var(--green); }
 .pill.online {
     color: var(--green);
     border-color: var(--green);
-    text-shadow: 0 0 8px rgba(0,255,65,.6);
-    box-shadow: 0 0 10px rgba(0,255,65,.2);
+    text-shadow: 0 0 8px color-mix(in srgb, var(--neon) 60%, transparent);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--neon) 20%, transparent);
 }
 .pill.offline {
     color: var(--red);
@@ -329,7 +331,7 @@ select option { background: #000; color: var(--green); }
     text-transform: uppercase;
     letter-spacing: 1px;
     font-size: 15px;
-    text-shadow: 0 0 8px rgba(0,255,65,.25);
+    text-shadow: 0 0 8px color-mix(in srgb, var(--neon) 25%, transparent);
 }
 .msg-body h1 { font-size: 17px; }
 .msg-body p { margin: 4px 0; }
@@ -427,7 +429,7 @@ select option { background: #000; color: var(--green); }
 .model-row select { cursor: pointer; }
 
 .console {
-    background: #000;
+    background: var(--codebg);
     border: 1px solid var(--border);
     border-radius: 0;
     height: 160px;
@@ -496,7 +498,7 @@ select option { background: #000; color: var(--green); }
 }
 .runner-editor { min-width: 0; overflow: hidden; }
 .runner-preview { min-width: 0; }
-.runner-editor .ed-wrap { position: relative; background: #000; border-bottom: 1px solid var(--border); height: 420px; }
+.runner-editor .ed-wrap { position: relative; background: var(--codebg); border-bottom: 1px solid var(--border); height: 420px; }
 .runner-editor .ed-wrap pre#codeHi,
 .runner-editor .ed-wrap textarea#codeBox {
     display: block;
@@ -533,7 +535,7 @@ select option { background: #000; color: var(--green); }
     overflow: auto;
     z-index: 2;
 }
-.runner-editor .ed-wrap textarea#codeBox::selection { background: rgba(0,255,65,.22); color: transparent; }
+.runner-editor .ed-wrap textarea#codeBox::selection { background: color-mix(in srgb, var(--neon) 22%, transparent); color: transparent; }
 .runner-editor .ed-wrap textarea#codeBox::placeholder { color: var(--muted); }
 .runner-editor .ac-pop {
     position: absolute;
@@ -624,7 +626,7 @@ select option { background: #000; color: var(--green); }
 .chat-input-row { margin-top: 0; padding: 10px; background: var(--bg2); border: 1px solid var(--border); border-top: none; border-radius: 0; }
 
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.75); display: flex; align-items: center; justify-content: center; z-index: 100; }
-.overlay-card { background: var(--bg2); border: 1px solid var(--green); border-radius: 0; padding: 20px; width: 340px; max-width: 90vw; box-shadow: 0 0 20px rgba(0,255,65,.15); }
+.overlay-card { background: var(--bg2); border: 1px solid var(--green); border-radius: 0; padding: 20px; width: 340px; max-width: 90vw; box-shadow: 0 0 20px color-mix(in srgb, var(--neon) 15%, transparent); }
 .overlay-card h3 { color: var(--green); margin-top: 0; }
 .search-results { margin-top: 10px; max-height: 260px; overflow-y: auto; }
 .search-item { display: flex; align-items: center; gap: 10px; padding: 8px; cursor: pointer; border-radius: 0; }
@@ -647,7 +649,7 @@ select option { background: #000; color: var(--green); }
 .ios-install-overlay.show { display: flex; }
 .ios-install-card {
     max-width: 420px; width: 100%; border: 1px solid var(--green);
-    background: var(--bg2); padding: 28px 24px; box-shadow: 0 0 24px rgba(0,255,65,.25);
+    background: var(--bg2); padding: 28px 24px; box-shadow: 0 0 24px color-mix(in srgb, var(--neon) 25%, transparent);
 }
 .ios-install-card h2 { color: var(--green); margin-top: 0; text-transform: uppercase; letter-spacing: 2px; }
 .ios-install-card p { color: var(--muted); }
@@ -676,9 +678,9 @@ select option { background: #000; color: var(--green); }
     color: var(--green);
     cursor: pointer;
     border-radius: 4px;
-    box-shadow: 0 0 10px rgba(0,255,65,.15);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--neon) 15%, transparent);
 }
-.settings-btn:hover { border-color: var(--green); box-shadow: 0 0 12px rgba(0,255,65,.35); }
+.settings-btn:hover { border-color: var(--green); box-shadow: 0 0 12px color-mix(in srgb, var(--neon) 35%, transparent); }
 .settings-overlay {
     position: fixed;
     inset: 0;
@@ -695,7 +697,7 @@ select option { background: #000; color: var(--green); }
     border: 1px solid var(--border);
     padding: 24px;
     border-radius: 6px;
-    box-shadow: 0 0 24px rgba(0,255,65,.18);
+    box-shadow: 0 0 24px color-mix(in srgb, var(--neon) 18%, transparent);
     max-height: 86vh;
     overflow-y: auto;
 }
@@ -743,7 +745,7 @@ select option { background: #000; color: var(--green); }
     opacity: 0;
     transition: transform .35s ease, opacity .35s ease;
     cursor: pointer;
-    box-shadow: 0 0 12px rgba(0,255,65,.18);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--neon) 18%, transparent);
     white-space: nowrap;
     pointer-events: none;
 }
@@ -751,6 +753,43 @@ select option { background: #000; color: var(--green); }
 .settings-prompt em { color: var(--green); font-style: normal; font-weight: 700; }
 .settings-actions { display: flex; justify-content: space-between; margin-top: 20px; gap: 10px; }
 .settings-actions button { margin: 0; }
+
+/* runner file tabs */
+.file-tabs { margin-left: auto; display: inline-flex; gap: 2px; align-items: center; min-width: 0; }
+.file-tab {
+    background: none;
+    border: 1px solid transparent;
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 3px 9px;
+    cursor: pointer;
+    margin: 0;
+}
+.file-tab:hover { color: var(--text); border-color: var(--border); background: var(--bg3); }
+.file-tab.active { color: var(--green); border-color: var(--border); background: var(--bg3); box-shadow: inset 0 -2px 0 var(--green); }
+/* runner console */
+.console-panel { margin-top: 12px; border: 1px solid var(--border); background: var(--codebg); display: flex; flex-direction: column; }
+.console-head { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-bottom: 1px solid var(--border); background: var(--bg2); }
+.console-title { font-size: 12px; color: var(--green-dim); text-transform: uppercase; letter-spacing: 1px; display: inline-flex; align-items: center; gap: 8px; }
+.console-dot { width: 9px; height: 9px; background: var(--green); display: inline-block; box-shadow: 0 0 8px color-mix(in srgb, var(--neon) 60%, transparent); }
+.console-dot.has-error { background: var(--red); box-shadow: 0 0 8px color-mix(in srgb, var(--red) 60%, transparent); }
+.console-count { color: var(--muted); font-size: 11px; }
+.console-clear { background: none; border: 1px solid var(--border); color: var(--muted); font-family: inherit; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; padding: 1px 9px; cursor: pointer; margin: 0; }
+.console-clear:hover { color: var(--green); border-color: var(--green); }
+.console-body { height: 130px; overflow-y: auto; padding: 6px 12px; font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 12px; line-height: 1.55; }
+.console-body .c-line { padding: 1px 0; white-space: pre-wrap; word-break: break-word; }
+.console-body .c-line + .c-line { border-top: 1px dashed color-mix(in srgb, var(--border) 55%, transparent); }
+.console-body .c-log, .console-body .c-info { color: var(--text); }
+.console-body .c-warn { color: var(--amber); }
+.console-body .c-error { color: var(--red); }
+.console-body .c-empty { color: var(--muted); font-style: italic; }
+@media (max-width: 900px) {
+    .file-tabs { margin-left: 0; }
+}
+
 </style>
 <script>
 (function () {
@@ -790,6 +829,7 @@ select option { background: #000; color: var(--green); }
     }
     function apply(t) {
         var el = document.documentElement;
+        var light = lum(t.bg) >= 0.5;
         el.style.setProperty('--bg', t.bg);
         el.style.setProperty('--bg2', t.bg2);
         el.style.setProperty('--bg3', t.bg3);
@@ -799,6 +839,10 @@ select option { background: #000; color: var(--green); }
         el.style.setProperty('--green-dark', t.dark);
         el.style.setProperty('--text', t.text);
         el.style.setProperty('--muted', t.muted);
+        el.style.setProperty('--codebg', light ? '#ffffff' : '#000000');
+        el.style.setProperty('--neon', light ? '#9aa39c' : '#00ff41');
+        el.style.setProperty('--amber', light ? '#9a6200' : '#ffb454');
+        el.style.setProperty('--red', light ? '#b3261e' : '#ff4444');
     }
     function load() {
         try {
@@ -820,7 +864,7 @@ select option { background: #000; color: var(--green); }
         reset: function () {
             try { localStorage.removeItem(KEY); } catch (e) {}
             var el = document.documentElement;
-            var vars = ['--bg', '--bg2', '--bg3', '--border', '--green', '--green-dim', '--green-dark', '--text', '--muted'];
+            var vars = ['--bg', '--bg2', '--bg3', '--border', '--green', '--green-dim', '--green-dark', '--text', '--muted', '--codebg', '--neon', '--amber', '--red'];
             vars.forEach(function (v) { el.style.removeProperty(v); });
         }
     };
@@ -1539,7 +1583,7 @@ editor_page = f"""
     <section>
         <h1>HTML Runner</h1>
         <div class="runner-toolbar">
-            <span class="hint">Press <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to run</span>
+            <span class="hint">Edit <b>HTML</b>, <b>CSS</b> and <b>JS</b> tabs &middot; press <kbd>Ctrl</kbd>+<kbd>Enter</kbd> or <b>Run</b> to build the preview &middot; the <b>Console</b> below shows errors from your code</span>
             <span class="spacer"></span>
             <button id="runBtn" style="margin-top:0;">Run ▶</button>
         </div>
@@ -1548,7 +1592,11 @@ editor_page = f"""
                 <div class="panel">
                     <div class="panel-head">
                         <span class="dots"><i></i><i></i><i></i></span>
-                        <span class="title">index.html</span>
+                        <span class="file-tabs" id="fileTabs">
+                            <button type="button" class="file-tab active" data-file="html">index.html</button>
+                            <button type="button" class="file-tab" data-file="css">style.css</button>
+                            <button type="button" class="file-tab" data-file="js">script.js</button>
+                        </span>
                     </div>
                     <div class="ed-wrap">
                         <pre id="codeHi" aria-hidden="true"></pre>
@@ -1566,6 +1614,15 @@ editor_page = f"""
                     <iframe id="outputFrame"></iframe>
                 </div>
             </div>
+        </div>
+        <div class="console-panel" id="consolePanel">
+            <div class="console-head">
+                <span class="console-title"><span class="console-dot" id="consoleDot"></span>Console</span>
+                <span class="console-count" id="consoleCount"></span>
+                <span class="spacer" style="flex:1"></span>
+                <button class="console-clear" id="consoleClear" type="button">Clear</button>
+            </div>
+            <div class="console-body" id="consoleBody"><div class="c-empty">Errors and console messages from your code show up here when you press Run.</div></div>
         </div>
     </section>
 </div>
@@ -2733,7 +2790,7 @@ def pwa_manifest():
 def pwa_sw():
     from flask import Response
     sw = """
-var CACHE = "platform-v20";
+var CACHE = "platform-v21";
 var PAGES = ["/", "/art", "/math", "/english", "/manifest.json", "/sw.js", "/P.svg", "/icon.svg"];
 
 self.addEventListener("install", function(e) {
