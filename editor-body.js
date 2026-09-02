@@ -89,8 +89,14 @@ function buildDoc() {
     var into = '';
     if (css) into += '<style>\n' + css + '\n</style>';
     into += cap;
-    if (/<\/head>/i.test(h)) h = h.replace(/<\/head>/i, into + '</head>');
-    else h = h + into;
+    if (/<\/head>/i.test(h)) {
+        h = h.replace(/<\/head>/i, into + '</head>');
+    } else {
+        // No head element: find the earliest spot before user content (after any
+        // doctype / <html> open tag) so capture runs before any user script below.
+        var m = /^(\s*)((?:<!DOCTYPE[^>]*>)?)((?:<html[^>]*>)?)([\s\S]*)$/i.exec(h);
+        h = m[1] + m[2] + m[3] + into + m[4];
+    }
     var tail = '';
     if (js) tail += '<script>\n' + js + '\n<\/script>';
     if (/<\/body>/i.test(h)) h = h.replace(/<\/body>/i, tail + '</body>');
@@ -115,10 +121,10 @@ function syncHiScroll() {
     codeHi.scrollLeft = codeBox.scrollLeft;
 }
 function updateAc() {
-    if (active !== 'html' || !codeBox || !window.PlatformHL) { closeAc(); return; }
+    if (!codeBox || !window.PlatformHL) { closeAc(); return; }
     var sel = codeBox.selectionStart == null ? codeBox.value.length : codeBox.selectionStart;
     var before = codeBox.value.slice(0, sel);
-    var s = window.PlatformHL.suggestionsFor({ textBeforeCaret: before });
+    var s = window.PlatformHL.suggestionsFor({ lang: active, textBeforeCaret: before });
     if (!s || !s.list || !s.list.length) { closeAc(); return; }
     if (!_acState || _acState.kind !== s.kind || _acState.prefix !== s.prefix) _acIndex = 0;
     _acState = s;
@@ -200,7 +206,8 @@ function renderAc() {
     acBox.innerHTML = '';
     var label = document.createElement('div');
     label.className = 'ac-label';
-    label.textContent = _acState.kind === 'attr' ? 'attribute' : _acState.kind === 'close-tag' ? 'closing tag' : _acState.kind === 'value' ? 'value' : 'tag';
+    var LABELS = { 'tag': 'tag', 'close-tag': 'closing tag', 'attr': 'attribute', 'value': 'value', 'css-at': 'at-rule', 'css-prop': 'css property', 'css-value': 'css value', 'js': 'javascript', 'js-member': 'member' };
+    label.textContent = LABELS[_acState.kind] || 'suggestion';
     acBox.appendChild(label);
     for (var i = 0; i < items.length; i++) {
         var row = document.createElement('div');
@@ -232,6 +239,10 @@ function applySuggestion(idx) {
         v = v.slice(0, start) + pick + '=""' + after;
         codeBox.value = v;
         codeBox.setSelectionRange(start + pick.length + 1, start + pick.length + 1);
+    } else if (_acState.kind === 'css-prop') {
+        v = v.slice(0, start) + pick + ': ' + after;
+        codeBox.value = v;
+        codeBox.setSelectionRange(start + pick.length + 2, start + pick.length + 2);
     } else {
         v = v.slice(0, start) + pick + after;
         codeBox.value = v;
@@ -272,7 +283,7 @@ function editorInput() {
     buffers[active] = codeBox.value;
     refreshHighlight();
     scheduleSave();
-    if (active === 'html') updateAc(); else closeAc();
+    updateAc();
 }
 
 loadBufs();
@@ -281,7 +292,7 @@ codeBox.placeholder = FILES[0].ph;
 codeBox.addEventListener('keydown', editorKey);
 codeBox.addEventListener('input', editorInput);
 codeBox.addEventListener('scroll', function () { syncHiScroll(); if (acBox && !acBox.hidden) positionAcBox(); });
-codeBox.addEventListener('click', function () { if (active === 'html') updateAc(); });
+codeBox.addEventListener('click', function () { updateAc(); });
 codeBox.addEventListener('blur', function () { setTimeout(closeAc, 150); });
 document.getElementById('runBtn').addEventListener('click', runCode);
 var clearBtn = document.getElementById('consoleClear');
