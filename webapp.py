@@ -54,6 +54,7 @@ css = """
     --muted: #6f9c77;
     --red: #ff4444;
     --amber: #ffb454;
+    --highlight: #eaff00;
 }
 * { box-sizing: border-box; }
 body {
@@ -321,7 +322,7 @@ select option { background: #000; color: var(--green); }
 .msg-body ul { margin: 4px 0; padding-left: 22px; }
 .msg-body li { margin: 2px 0; }
 .msg-body pre {
-    background: #04120a;
+    background: var(--bg3);
     border: 1px solid var(--border);
     padding: 8px 10px;
     overflow-x: auto;
@@ -330,21 +331,21 @@ select option { background: #000; color: var(--green); }
 .msg-body code {
     font-family: 'Cascadia Code', Consolas, monospace;
     color: var(--green);
-    background: rgba(0,255,65,.08);
+    background: var(--bg3);
     padding: 1px 4px;
 }
-.msg-body pre code { background: none; padding: 0; color: #c8ffd2; }
-.msg-body .code-block { margin: 6px 0; border: 1px solid var(--border); background: #04120a; }
-.msg-body .code-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 8px; background: rgba(0,255,65,.07); border-bottom: 1px solid var(--border); }
+.msg-body pre code { background: none; padding: 0; color: var(--text); }
+.msg-body .code-block { margin: 6px 0; border: 1px solid var(--border); background: var(--bg3); }
+.msg-body .code-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 8px; background: var(--bg3); border-bottom: 1px solid var(--border); }
 .msg-body .code-head span { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-family: 'Cascadia Code', Consolas, monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .msg-body .code-block pre { border: none; margin: 0; padding: 8px 10px; }
 .msg-body .copy-btn { background: none; border: 1px solid var(--border); color: var(--green); font-family: 'Cascadia Code', Consolas, monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; padding: 1px 8px; cursor: pointer; flex-shrink: 0; }
 .msg-body .copy-btn:hover { background: var(--green); color: #000; }
 .msg-body table { border-collapse: collapse; margin: 6px 0; width: 100%; font-size: 13px; }
 .msg-body th, .msg-body td { border: 1px solid var(--border); padding: 5px 8px; text-align: left; vertical-align: top; }
-.msg-body th { background: rgba(0,255,65,.08); color: var(--green); text-transform: uppercase; letter-spacing: 1px; font-size: 11px; font-weight: 600; }
-.msg-body tbody tr:nth-child(even) td { background: rgba(0,255,65,.03); }
-.msg-body mark { background: rgba(0,255,65,.28); color: #000; padding: 0 3px; border-radius: 2px; }
+.msg-body th { background: var(--bg3); color: var(--green); text-transform: uppercase; letter-spacing: 1px; font-size: 11px; font-weight: 600; }
+.msg-body tbody tr:nth-child(even) td { background: var(--bg3); }
+.msg-body mark { background: var(--highlight); color: #000; padding: 0 3px; border-radius: 2px; }
 .msg-body del { color: var(--muted); }
 .msg-body sub, .msg-body sup { font-size: 11px; color: var(--green); }
 .msg-body kbd { background: var(--bg3); border: 1px solid var(--border); border-bottom-width: 2px; padding: 1px 5px; font-family: 'Cascadia Code', Consolas, monospace; font-size: 11px; color: var(--green); }
@@ -1315,6 +1316,7 @@ window.addEventListener('pageshow', function () {
         <h4>Custom colors</h4>
         <div class="color-row"><label for="colorBg">Background</label><input type="color" id="colorBg" value="#050a05"></div>
         <div class="color-row"><label for="colorAccent">Accent</label><input type="color" id="colorAccent" value="#00ff41"></div>
+        <div class="color-row"><label for="colorHighlight">Highlight</label><input type="color" id="colorHighlight" value="#eaff00"></div>
         <div class="settings-actions">
             <button class="secondary" id="resetTheme">Reset default</button>
             <button id="closeSettings">Done</button>
@@ -1331,7 +1333,17 @@ window.addEventListener('pageshow', function () {
     var grid = document.getElementById('themeGrid');
     var bgIn = document.getElementById('colorBg');
     var accIn = document.getElementById('colorAccent');
-    if (!btn || !ov || !grid || !bgIn || !accIn) return;
+    var hlIn = document.getElementById('colorHighlight');
+    if (!btn || !ov || !grid || !bgIn || !accIn || !hlIn) return;
+    var HL_KEY = 'platform_hl';
+    var HL_DEFAULT = '#eaff00';
+    function applyHl(h) { document.documentElement.style.setProperty('--highlight', h); }
+    function loadHl() {
+        var h = HL_DEFAULT;
+        try { h = localStorage.getItem(HL_KEY) || HL_DEFAULT; } catch (e) {}
+        hlIn.value = h;
+        applyHl(h);
+    }
     var PRESETS = [
         { name: 'Classic', bg: '#050a05', bg2: '#08120a', bg3: '#0c1a0e', border: '#1d3a22', green: '#00ff41', dim: '#00c832', dark: '#0a3d0a', text: '#c8ffd2', muted: '#6f9c77' },
         { name: 'Amber', bg: '#0d0800', bg2: '#160e00', bg3: '#201500', border: '#4a3410', green: '#ffb454', dim: '#e09640', dark: '#3d2a08', text: '#ffe8c2', muted: '#a88654' },
@@ -1344,6 +1356,8 @@ window.addEventListener('pageshow', function () {
         var s = PT.get() || { bg: '#050a05', green: '#00ff41' };
         bgIn.value = s.bg;
         accIn.value = s.green;
+        try { hlIn.value = localStorage.getItem(HL_KEY) || HL_DEFAULT; } catch (e) {}
+        applyHl(hlIn.value);
         grid.innerHTML = '';
         PRESETS.forEach(function (p) {
             var b = document.createElement('button');
@@ -1365,11 +1379,21 @@ window.addEventListener('pageshow', function () {
     }
     bgIn.addEventListener('input', pickCustom);
     accIn.addEventListener('input', pickCustom);
+    hlIn.addEventListener('input', function () {
+        try { localStorage.setItem(HL_KEY, hlIn.value); } catch (e) {}
+        applyHl(hlIn.value);
+    });
+    loadHl();
     btn.addEventListener('click', function () { render(); ov.classList.add('show'); });
     document.getElementById('closeSettings').addEventListener('click', function () { ov.classList.remove('show'); });
     ov.addEventListener('click', function (e) { if (e.target === ov) ov.classList.remove('show'); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') ov.classList.remove('show'); });
-    document.getElementById('resetTheme').addEventListener('click', function () { PT.reset(); render(); });
+    document.getElementById('resetTheme').addEventListener('click', function () {
+        PT.reset();
+        try { localStorage.removeItem(HL_KEY); } catch (e) {}
+        applyHl(HL_DEFAULT);
+        render();
+    });
 })();
 
 (function () {
@@ -2597,7 +2621,7 @@ def pwa_manifest():
 def pwa_sw():
     from flask import Response
     sw = """
-var CACHE = "platform-v11";
+var CACHE = "platform-v12";
 var PAGES = ["/", "/art", "/math", "/english", "/manifest.json", "/sw.js", "/P.svg", "/icon.svg"];
 
 self.addEventListener("install", function(e) {
