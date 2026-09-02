@@ -1449,13 +1449,13 @@ ai_page = f"""
 <div class="container">
     <section>
         <h1>Platform AI <span id="statusPill" class="pill offline">● checking AI gateway...</span></h1>
-        <p>Free only every chat runs through OpenRouter's <code>openrouter/free</code> model at zero cost.</p>
+        <p>Free only every chat runs through OpenRouter's free router, with automatic failover to DeepSeek V3 so it stays online even when a free model goes down.</p>
         <p class="ephemeral-note">Each device gets its own private conversation the AI only ever sees this chat.</p>
         <p class="ephemeral-note">Every message passes through an automatic safety check before the AI replies, to keep the space friendly for everyone.</p>
         <div class="model-row">
             <label for="modelInput">Model</label>
             <select id="modelInput">
-                <option value="openrouter/free">openrouter/free (free models only)</option>
+                <option value="openrouter/free">free router with DeepSeek failover</option>
             </select>
             <button class="secondary" id="newChatBtn">New chat</button>
         </div>
@@ -2381,39 +2381,52 @@ def ai_chat():
     if bad and not moderate_flagged_message(last_user, bad):
         return jsonify({"error": "That message was blocked by the safety filter."}), 400
 
-    payload = {"model": model, "messages": messages, "max_tokens": 1800}
-    headers = {"Content-Type": "application/json"}
-    if AI_API_KEY:
-        headers["Authorization"] = f"Bearer {AI_API_KEY}"
-        headers["HTTP-Referer"] = request.host_url.rstrip("/")
-        headers["X-Title"] = "The Platform"
-    req = urllib.request.Request(
-        AI_BASE_URL + "/chat/completions",
-        data=json.dumps(payload).encode("utf-8"),
-        headers=headers,
-        method="POST",
-    )
-    
-    
-    
+    candidates = [AI_DEFAULT_MODEL]
+    backup_model = os.environ.get("AI_BACKUP_MODEL", "deepseek/deepseek-chat-v3-0324:free")
+    if backup_model and backup_model != AI_DEFAULT_MODEL:
+        candidates.append(backup_model)
     body = None
     last_error = None
-    for attempt in range(3):
-        try:
-            with urllib.request.urlopen(req, timeout=50) as resp:
-                body = json.loads(resp.read().decode("utf-8"))
-            break
-        except urllib.error.HTTPError as e:
-            last_error = e
-            if e.code not in (408, 425, 429, 500, 502, 503, 504) or attempt == 2:
-                detail = e.read().decode("utf-8", errors="replace")[:500]
-                return jsonify({"error": f"AI provider returned HTTP {e.code}: {detail}"}), 502
-            time.sleep(0.6 * (attempt + 1))
-        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as e:
-            last_error = e
-            if attempt == 2:
+    used_model = AI_DEFAULT_MODEL
+    for candidate in candidates:
+        used_model = candidate
+        payload = {"model": candidate, "messages": messages, "max_tokens": 1800}
+        headers = {"Content-Type": "application/json"}
+        if AI_API_KEY:
+            headers["Authorization"] = f"Bearer {AI_API_KEY}"
+            headers["HTTP-Referer"] = request.host_url.rstrip("/")
+            headers["X-Title"] = "The Platform"
+        req = urllib.request.Request(
+            AI_BASE_URL + "/chat/completions",
+            data=json.dumps(payload).encode("utf-8"),
+            headers=headers,
+            method="POST",
+        )
+        for attempt in range(3):
+            try:
+                with urllib.request.urlopen(req, timeout=50) as resp:
+                    body = json.loads(resp.read().decode("utf-8"))
                 break
-            time.sleep(0.6 * (attempt + 1))
+            except urllib.error.HTTPError as e:
+                last_error = e
+                detail = ""
+                try:
+                    detail = e.read().decode("utf-8", errors="replace")[:300]
+                except Exception:
+                    pass
+                retriable = e.code in (408, 425, 429, 500, 502, 503, 504)
+                if not retriable or attempt == 2:
+                    if candidate == candidates[-1]:
+                        return jsonify({"error": f"AI provider returned HTTP {e.code}: {detail}"}), 502
+                    break
+                time.sleep(0.6 * (attempt + 1))
+            except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as e:
+                last_error = e
+                if attempt == 2:
+                    break
+                time.sleep(0.6 * (attempt + 1))
+        if body is not None:
+            break
 
     if body is None:
         return jsonify({"error": "AI is unavailable right now. Please try again."}), 503
@@ -2449,7 +2462,7 @@ def ai_chat():
                 "I can't answer that one my response would have contained "
                 "inappropriate content. Ask me something else."
             )
-        out = {"reply": content, "model": body.get("model", model)}
+        out = {"reply": content, "model": body.get("model", used_model)}
         if minted_pass:
             out["pass"] = minted_pass
         return jsonify(out)
@@ -2621,7 +2634,7 @@ def pwa_manifest():
 def pwa_sw():
     from flask import Response
     sw = """
-var CACHE = "platform-v14";
+var CACHE = "platform-v15";
 var PAGES = ["/", "/art", "/math", "/english", "/manifest.json", "/sw.js", "/P.svg", "/icon.svg"];
 
 self.addEventListener("install", function(e) {
