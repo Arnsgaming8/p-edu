@@ -2,6 +2,7 @@ from flask import Flask, jsonify, redirect, request
 
 import hashlib
 import hmac
+import io
 import json
 import os
 import re
@@ -18,6 +19,19 @@ app = Flask(__name__)
 AI_BASE_URL = os.environ.get("AI_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/")
 AI_API_KEY = os.environ.get("AI_API_KEY", "")
 AI_DEFAULT_MODEL = os.environ.get("AI_DEFAULT_MODEL", "minimax/minimax-m3:free")
+
+
+def _asset(name):
+    try:
+        _p = os.path.join(os.path.dirname(os.path.abspath(__file__)), name)
+        with io.open(_p, encoding="utf-8") as _f:
+            return _f.read()
+    except Exception:
+        return ""
+
+
+hl_lib_js = _asset("hl-lib.js")
+editor_body_js = _asset("editor-body.js")
 TURNSTILE_SITE_KEY = "0x4AAAAAAEjc0hCJvIuWXbRC"
 TURNSTILE_SECRET_KEY = os.environ.get("TURNSTILE_SECRET_KEY", "")
 
@@ -346,6 +360,21 @@ select option { background: #000; color: var(--green); }
 .msg-body th { background: var(--bg3); color: var(--green); text-transform: uppercase; letter-spacing: 1px; font-size: 11px; font-weight: 600; }
 .msg-body tbody tr:nth-child(even) td { background: var(--bg3); }
 .msg-body mark { background: var(--highlight); color: #000; padding: 0 3px; border-radius: 2px; }
+
+.tok-c { color: var(--muted); font-style: italic; }
+.tok-s { color: var(--amber); }
+.tok-k { color: var(--green); font-weight: 600; }
+.tok-n { color: var(--amber); }
+.tok-fn { color: var(--green); }
+.tok-tag { color: var(--green); font-weight: 600; }
+.tok-attr { color: var(--text); }
+.tok-id { color: var(--text); }
+.tok-a { color: var(--green); }
+.tok-sel { color: var(--green); font-weight: 600; }
+.tok-at { color: var(--green); }
+.tok-d { color: var(--muted); }
+.tok-punc { color: var(--muted); }
+
 .msg-body del { color: var(--muted); }
 .msg-body sub, .msg-body sup { font-size: 11px; color: var(--green); }
 .msg-body kbd { background: var(--bg3); border: 1px solid var(--border); border-bottom-width: 2px; padding: 1px 5px; font-family: 'Cascadia Code', Consolas, monospace; font-size: 11px; color: var(--green); }
@@ -467,24 +496,74 @@ select option { background: #000; color: var(--green); }
 }
 .runner-editor { min-width: 0; overflow: hidden; }
 .runner-preview { min-width: 0; }
-.runner-editor #codeBox {
+.runner-editor .ed-wrap { position: relative; background: #000; border-bottom: 1px solid var(--border); height: 420px; }
+.runner-editor .ed-wrap pre#codeHi,
+.runner-editor .ed-wrap textarea#codeBox {
     display: block;
     width: 100%;
     height: 420px;
     padding: 12px;
     margin: 0;
-    background: #000;
-    color: var(--green);
     border: none;
-    border-bottom: 1px solid var(--border);
+    background: transparent;
     font-family: 'Cascadia Code', 'Consolas', monospace;
     font-size: 13px;
     line-height: 1.5;
-    resize: none;
-    caret-color: var(--green);
+    white-space: pre;
+    overflow-wrap: normal;
+    word-break: normal;
+    tab-size: 4;
     box-sizing: border-box;
 }
-.runner-editor #codeBox::placeholder { color: var(--muted); }
+.runner-editor .ed-wrap pre#codeHi {
+    position: absolute;
+    top: 0;
+    left: 0;
+    color: var(--text);
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 1;
+}
+.runner-editor .ed-wrap textarea#codeBox {
+    position: relative;
+    color: transparent;
+    caret-color: var(--green);
+    resize: none;
+    outline: none;
+    overflow: auto;
+    z-index: 2;
+}
+.runner-editor .ed-wrap textarea#codeBox::selection { background: rgba(0,255,65,.22); color: transparent; }
+.runner-editor .ed-wrap textarea#codeBox::placeholder { color: var(--muted); }
+.runner-editor .ac-pop {
+    position: absolute;
+    z-index: 9;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 16px rgba(0,0,0,.55);
+    max-height: 220px;
+    overflow: auto;
+}
+.runner-editor .ac-pop[hidden] { display: none; }
+.runner-editor .ac-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--border);
+}
+.runner-editor .ac-item {
+    padding: 5px 10px;
+    cursor: pointer;
+    color: var(--text);
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.runner-editor .ac-item.active,
+.runner-editor .ac-item:hover { background: var(--green); color: #000; }
 .runner-preview iframe {
     width: 100%; height: 420px;
     background: #fff; border: none; margin-top: 0;
@@ -1049,7 +1128,11 @@ function tableHtml(rows) {
     return out;
 }
 function codeBlock(code, lang) {
-    return '<div class="code-block"><div class="code-head"><span>' + (lang || 'code') + '</span><button class="copy-btn" type="button">copy</button></div><pre><code>' + code + '</code></pre></div>';
+    var raw = window.PlatformHL.unesc(code);
+    var l = String(lang || '').toLowerCase().trim();
+    if (!l || l === 'code' || l === 'text' || l === 'plain' || l === 'txt' || l === 'none') l = window.PlatformHL.detectLang(raw);
+    var body = window.PlatformHL.hlByLang(raw, l);
+    return '<div class="code-block"><div class="code-head"><span>' + (lang || 'code') + '</span><button class="copy-btn" type="button">copy</button></div><pre><code>' + body + '</code></pre></div>';
 }
 function addMessage(role, text) {
     var wrap = document.createElement('div');
@@ -1254,37 +1337,7 @@ console_shim = """
 })();
 """
 
-editor_js = (
-    "var CONSOLE_SHIM = " + json.dumps(console_shim) + ";\n"
-    """
-var HTML_DEFAULT = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>HTML Runner</title><style>    body {        margin: 0;        font-family: "Cascadia Code", Consolas, monospace;        background: #ffffff;        color: #1a1a1a;        display: flex;        align-items: center;        justify-content: center;        min-height: 100vh;    }    .card {        max-width: 560px;        border: 1px solid #d0d0d0;        background: #fafafa;        padding: 28px 32px;        text-align: center;        border-radius: 6px;    }    h1 {        color: #0a7d2e;        text-transform: uppercase;        letter-spacing: 3px;        margin-top: 0;    }    p { color: #444; line-height: 1.6; }    code {        color: #0a7d2e;        background: #eef2ee;        padding: 2px 6px;        border: 1px solid #d0d0d0;        border-radius: 3px;    }    button {        margin-top: 16px;        padding: 9px 18px;        background: #0a7d2e;        color: #ffffff;        border: none;        border-radius: 4px;        cursor: pointer;        font-family: "Cascadia Code", Consolas, monospace;        text-transform: uppercase;        letter-spacing: 1px;    }    button:hover { background: #086b26; }</style></head><body>    <div class="card">        <h1>HTML Runner</h1>        <p>Edit the code on the left and press <b>Run</b> to see your changes here.</p>        <p>Start with <code>&lt;h1&gt;Hello&lt;/h1&gt;</code> and build from there.</p>        <button>It Works</button>    </div></body></html>';
-
-
-var codeBox = document.getElementById('codeBox');
-
-function renderToFrame(code) {
-    var frame = document.getElementById('outputFrame');
-    var doc = frame.contentDocument || frame.contentWindow.document;
-    doc.open();
-    doc.write(code);
-    doc.close();
-}
-
-function runCode() {
-    renderToFrame(codeBox.value);
-}
-
-codeBox.addEventListener('keydown', function (e) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runCode(); }
-});
-
-document.getElementById('runBtn').addEventListener('click', runCode);
-
-
-renderToFrame(HTML_DEFAULT);
-codeBox.focus();
-"""
-)
+editor_js = editor_body_js
 
 
 settings_html = """<div class="turnstile-settings-wrap"><div class="cf-turnstile" data-sitekey="0x4AAAAAAEjc0hCJvIuWXbRC" data-appearance="interaction-only" data-callback="setTurnstileToken" data-expired-callback="clearTurnstileToken" data-error-callback="clearTurnstileToken"></div></div><p class="turnstile-disclosure">Protected by <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Cloudflare Turnstile</a></p>
@@ -1468,6 +1521,9 @@ ai_page = f"""
     </section>
 </div>
 <script>
+{hl_lib_js}
+</script>
+<script>
 {ai_js}
 </script>
 """
@@ -1494,7 +1550,11 @@ editor_page = f"""
                         <span class="dots"><i></i><i></i><i></i></span>
                         <span class="title">index.html</span>
                     </div>
-                    <textarea id="codeBox" class="code" spellcheck="false" placeholder="Type your HTML here, then press Run to render it in the preview"></textarea>
+                    <div class="ed-wrap">
+                        <pre id="codeHi" aria-hidden="true"></pre>
+                        <textarea id="codeBox" class="code" wrap="off" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" placeholder="Type your HTML here, then press Run to render it in the preview"></textarea>
+                        <div id="acBox" class="ac-pop" hidden></div>
+                    </div>
                 </div>
             </div>
             <div class="runner-preview">
@@ -1509,6 +1569,9 @@ editor_page = f"""
         </div>
     </section>
 </div>
+<script>
+{hl_lib_js}
+</script>
 <script>
 {editor_js}
 </script>
@@ -2670,7 +2733,7 @@ def pwa_manifest():
 def pwa_sw():
     from flask import Response
     sw = """
-var CACHE = "platform-v19";
+var CACHE = "platform-v20";
 var PAGES = ["/", "/art", "/math", "/english", "/manifest.json", "/sw.js", "/P.svg", "/icon.svg"];
 
 self.addEventListener("install", function(e) {
