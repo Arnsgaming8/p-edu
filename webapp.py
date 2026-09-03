@@ -1678,14 +1678,25 @@ function trackUnread(convs) {
 }
 
 
-(function wipeOld() {
-    var today = todayStr();
-    if (localStorage.getItem(STORE.day) !== today) {
-        localStorage.removeItem(STORE.history);
-        localStorage.removeItem(STORE.unread);
-        localStorage.setItem(STORE.day, today);
-    }
-})();
+function pruneHistory() {
+    var m = loadMap(), changed = false, cutoff = Date.now() - 5 * 86400 * 1000;
+    Object.keys(m).forEach(function (id) {
+        var kept = m[id].filter(function (msg) {
+            if (!msg || !msg.ts) return true;
+            var tsMs = msg.ts < 100000000000 ? msg.ts * 1000 : msg.ts;
+            return tsMs >= cutoff;
+        });
+        if (kept.length !== m[id].length) changed = true;
+        if (kept.length) { m[id] = kept; } else { delete m[id]; }
+    });
+    if (changed) saveMap(m);
+    var uChanged = false;
+    Object.keys(state.unread || {}).forEach(function (id) {
+        if (!m[id]) { delete state.unread[id]; uChanged = true; }
+    });
+    if (uChanged) saveUnread();
+}
+pruneHistory();
 
 var state = {
     me: localStorage.getItem(STORE.user) || '',
@@ -1901,7 +1912,7 @@ function enterChat(name) {
     try { localStorage.setItem(STORE.user, name); } catch (e) {}
     els.nameScreen.style.display = 'none';
     els.chatBox.style.display = 'flex';
-    setStatus('Chatting as ' + name + ' \u00b7 direct private chats \u00b7 messages auto delete every day');
+    setStatus('Chatting as ' + name + ' \u00b7 direct private chats \u00b7 messages auto delete after 5 days');
     refreshConvs();
     setInterval(refreshConvs, 3000);
     setInterval(refreshMessages, 2000);
@@ -1910,16 +1921,11 @@ function enterChat(name) {
 
 
 function wipeCheck() {
-    if (localStorage.getItem(STORE.day) !== todayStr()) {
-        localStorage.removeItem(STORE.history);
-        localStorage.removeItem(STORE.unread);
-        state.unread = {};
-        localStorage.setItem(STORE.day, todayStr());
-        state.msgs = [];
-        state.seen = {};
-        if (state.activeKey) state.msgs = historyFor(state.activeKey);
-        renderMsgs();
-    }
+    pruneHistory();
+    state.msgs = [];
+    state.seen = {};
+    if (state.activeKey) state.msgs = historyFor(state.activeKey);
+    renderMsgs();
 }
 
 function openSearch() {
@@ -2127,7 +2133,7 @@ def _redis():
 CHAT_USER_MAX = 24
 CHAT_TEXT_MAX = 1000
 CHAT_MAX_MESSAGES = 200
-CHAT_DAY_TTL = 86400  
+CHAT_DAY_TTL = 86400 * 5  
 CHAT_USERS_KEY = "chat:users"
 
 
@@ -2792,7 +2798,7 @@ def pwa_manifest():
 def pwa_sw():
     from flask import Response
     sw = """
-var CACHE = "platform-v24";
+var CACHE = "platform-v25";
 var PAGES = ["/", "/art", "/math", "/english", "/manifest.json", "/sw.js", "/P.svg", "/icon.svg"];
 
 self.addEventListener("install", function(e) {
