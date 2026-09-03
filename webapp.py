@@ -940,6 +940,7 @@ NAV = """
 
 
 ai_js = """
+var API_BASE = (location.hostname.indexOf('github.io') !== -1) ? 'https://theplatform-app.vercel.app' : '';
 var chatLog = document.getElementById('chatLog');
 var chatInput = document.getElementById('chatInput');
 
@@ -1216,7 +1217,7 @@ function sendMessage() {
     pending.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
     var model = 'minimax/minimax-m3:free';
     var payload = { model: model, messages: [SYSTEM_ANCHOR].concat(chatHistory, [{ role: 'user', content: text }]), turnstile_token: window.turnstileToken || '', verified_pass: aiPass };
-    fetch('/api/ai/chat', {
+    fetch(API_BASE + '/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -1269,7 +1270,7 @@ chatInput.addEventListener('keydown', function (e) {
 });
 document.getElementById('newChatBtn').addEventListener('click', newChat);
 
-fetch('/api/ai/status').then(function (r) { return r.json(); }).then(function (d) {
+fetch(API_BASE + '/api/ai/status').then(function (r) { return r.json(); }).then(function (d) {
     var pill = document.getElementById('statusPill');
     if (d.ok) {
         pill.textContent = '\u25cf AI online';
@@ -1636,6 +1637,7 @@ editor_page = f"""
 
 
 chat_js = """
+var API_BASE = (location.hostname.indexOf('github.io') !== -1) ? 'https://theplatform-app.vercel.app' : '';
 var STORE = { user: 'chat_username', history: 'chat_history', day: 'chat_last_day', unread: 'chat_unread' };
 
 function todayStr() { return new Date().toISOString().slice(0, 10); }
@@ -1798,7 +1800,7 @@ function addMsgs(msgs) {
 
 function refreshMessages() {
     if (!state.activeId) return;
-    var url = '/api/chat/messages?user=' + encodeURIComponent(state.me) + '&with=' + encodeURIComponent(state.other);
+    var url = API_BASE + '/api/chat/messages?user=' + encodeURIComponent(state.me) + '&with=' + encodeURIComponent(state.other);
     api(url)
         .then(function (d) {
             if (d && d.error) { setStatus(d.error); return; }
@@ -1844,7 +1846,7 @@ function renderConvs() {
 }
 
 function refreshConvs() {
-    api('/api/chat/conversations?user=' + encodeURIComponent(state.me))
+    api(API_BASE + '/api/chat/conversations?user=' + encodeURIComponent(state.me))
         .then(function (d) {
             if (d && d.conversations) {
                 state.convs = d.conversations;
@@ -1860,7 +1862,7 @@ function send() {
     if (!text || !state.other) return;
     els.chatInput.value = '';
     var body = { user: state.me, to: state.other, text: text };
-    api('/api/chat/messages', {
+    api(API_BASE + '/api/chat/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
@@ -1879,7 +1881,7 @@ function startChat() {
     if (!name) { els.nameError.textContent = 'Pick a username'; return; }
     els.nameError.textContent = '';
     
-    api('/api/chat/register', {
+    api(API_BASE + '/api/chat/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user: name })
@@ -1931,7 +1933,7 @@ function closeSearch() { els.overlay.style.display = 'none'; }
 
 function runSearch() {
     var q = els.searchInput.value.trim();
-    api('/api/chat/users?me=' + encodeURIComponent(state.me) + '&q=' + encodeURIComponent(q))
+    api(API_BASE + '/api/chat/users?me=' + encodeURIComponent(state.me) + '&q=' + encodeURIComponent(q))
         .then(function (d) {
             var users = (d && Array.isArray(d.users)) ? d.users : [];
             els.searchResults.innerHTML = '';
@@ -1986,7 +1988,7 @@ els.deleteAcctBtn.addEventListener('click', function () {
         setTimeout(function () { _delArmed = false; els.deleteAcctBtn.textContent = 'Delete account'; }, 3000);
         return;
     }
-    api('/api/chat/delete', {
+    api(API_BASE + '/api/chat/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user: state.me })
@@ -2790,7 +2792,7 @@ def pwa_manifest():
 def pwa_sw():
     from flask import Response
     sw = """
-var CACHE = "platform-v23";
+var CACHE = "platform-v24";
 var PAGES = ["/", "/art", "/math", "/english", "/manifest.json", "/sw.js", "/P.svg", "/icon.svg"];
 
 self.addEventListener("install", function(e) {
