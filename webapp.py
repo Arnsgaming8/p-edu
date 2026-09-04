@@ -1912,7 +1912,7 @@ function enterChat(name) {
     try { localStorage.setItem(STORE.user, name); } catch (e) {}
     els.nameScreen.style.display = 'none';
     els.chatBox.style.display = 'flex';
-    setStatus('Chatting as ' + name + ' \u00b7 direct private chats \u00b7 messages auto delete after 5 days');
+    setStatus('Chatting as ' + name + ' \u00b7 direct private chats \u00b7 messages delete every 5 days');
     refreshConvs();
     setInterval(refreshConvs, 3000);
     setInterval(refreshMessages, 2000);
@@ -2798,7 +2798,7 @@ def pwa_manifest():
 def pwa_sw():
     from flask import Response
     sw = """
-var CACHE = "platform-v25";
+var CACHE = "platform-v26";
 var PAGES = ["/", "/art", "/math", "/english", "/manifest.json", "/sw.js", "/P.svg", "/icon.svg"];
 
 self.addEventListener("install", function(e) {
