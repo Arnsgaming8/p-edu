@@ -471,7 +471,7 @@ window.PlatformHL = (function () {
       if (at) {
         var ats = ['@media', '@keyframes', '@import', '@font-face', '@supports', '@charset', '@page', '@layer'];
         var atl = [];
-        for (var ai = 0; ai < ats.length; ai++) if (ats[ai].indexOf(at[1]) === 0) atl.push(ats[ai]);
+        for (var ai = 0; ai < ats.length; ai++) if (ciPref(ats[ai], at[1])) atl.push(ats[ai]);
         return atl.length ? { kind: 'css-at', list: atl, prefix: at[1] } : null;
       }
       return null;
@@ -493,7 +493,7 @@ window.PlatformHL = (function () {
       var bw = seg.slice(0, seg.length - pw.length);
       if (bw !== '' && !/[\s{;]$/.test(bw)) return null;
       var pl = [];
-      for (var pi = 0; pi < CSS_PROPS.length; pi++) if (CSS_PROPS[pi].indexOf(pw) === 0) pl.push(CSS_PROPS[pi]);
+      for (var pi = 0; pi < CSS_PROPS.length; pi++) if (ciPref(CSS_PROPS[pi], pw)) pl.push(CSS_PROPS[pi]);
       return pl.length ? { kind: 'css-prop', list: pl, prefix: pw } : null;
     }
     var valuePart = seg.slice(colonIdx + 1);
@@ -506,7 +506,7 @@ window.PlatformHL = (function () {
     var propName = (/[\w-]+/.exec(seg) || [''])[0];
     var cands = CSS_VALUE_MAP[propName] || (propName.indexOf('color') >= 0 ? CSS_COLORS : CSS_GENERIC_VALUES);
     var vlist = [];
-    for (var vi = 0; vi < cands.length; vi++) if (cands[vi].indexOf(vl) === 0) vlist.push(cands[vi]);
+    for (var vi = 0; vi < cands.length; vi++) if (ciPref(cands[vi], vl)) vlist.push(cands[vi]);
     return vlist.length ? { kind: 'css-value', list: vlist, prefix: vl, prop: propName } : null;
   }
 
@@ -533,6 +533,7 @@ window.PlatformHL = (function () {
     Set: ['add','clear','delete','entries','forEach','has','keys','size','values'],
     Map: ['clear','delete','entries','forEach','get','has','keys','set','size','values']
   };
+  function ciPref(w, p) { return w.toLowerCase().indexOf(p.toLowerCase()) === 0; }
   function jsDeclared(text) {
     var names = [];
     var m;
@@ -557,7 +558,7 @@ window.PlatformHL = (function () {
       if (members) {
         var prefix2 = member[2];
         var ml = [];
-        for (var mi = 0; mi < members.length; mi++) if (members[mi].indexOf(prefix2) === 0) ml.push(members[mi]);
+        for (var mi = 0; mi < members.length; mi++) if (ciPref(members[mi], prefix2)) ml.push(members[mi]);
         return ml.length ? { kind: 'js-member', list: ml, prefix: prefix2, base: base } : null;
       }
       return null;
@@ -571,13 +572,16 @@ window.PlatformHL = (function () {
       var ch = line[startIdx - 1];
       if (/[0-9A-Za-z_$.]/.test(ch)) return null;
     }
-    var cands = jsDeclared(before).concat(JS_KEYWORDS).concat(JS_GLOBALS);
+    var cands = jsDeclared(before).concat(JS_GLOBALS).concat(JS_KEYWORDS);
     var seen = {};
-    var out = [];
+    var exact = [], loose = [];
     for (var i = 0; i < cands.length; i++) {
       var n = cands[i];
-      if (!seen[n] && n.indexOf(prefix) === 0) { seen[n] = true; out.push(n); }
+      if (seen[n] || !ciPref(n, prefix)) continue;
+      seen[n] = true;
+      if (n.indexOf(prefix) === 0) exact.push(n); else loose.push(n);
     }
+    var out = exact.concat(loose);
     return out.length ? { kind: 'js', list: out, prefix: prefix } : null;
   }
 
@@ -595,7 +599,7 @@ function htmlSuggest(ctx) {
     }
     if (/^[A-Za-z][\w-]*$/.test(inner)) {
       var prefix = inner;
-      var tagList = TAGS.filter(function (t) { return t.indexOf(prefix) === 0; });
+      var tagList = TAGS.filter(function (t) { return ciPref(t, prefix); });
       if (!tagList.length) return null;
       return { kind: isClosing ? 'close-tag' : 'tag', list: tagList, prefix: prefix };
     }
@@ -612,7 +616,7 @@ function htmlSuggest(ctx) {
       if (afterEqWord && afterEqWord[1]) {
         if (tagName === 'input' && /type\s*=\s*["']?$/.test(attrZone.slice(0, attrZone.length - afterEqWord[1].length))) {
           var p2 = afterEqWord[1];
-          var tv = INPUT_TYPES.filter(function (t) { return t.indexOf(p2) === 0; });
+          var tv = INPUT_TYPES.filter(function (t) { return ciPref(t, p2); });
           if (tv.length) return { kind: 'value', list: tv, prefix: p2 };
         }
         return null;
@@ -622,7 +626,7 @@ function htmlSuggest(ctx) {
         var attrSet = (TAG_ATTRS[tagName] || []).concat(GLOBAL_ATTRS).concat(EVENT_ATTRS);
         var uniq = [];
         for (var ai = 0; ai < attrSet.length; ai++) if (uniq.indexOf(attrSet[ai]) === -1) uniq.push(attrSet[ai]);
-        var list2 = uniq.filter(function (a) { return a.indexOf(curWord) === 0; });
+        var list2 = uniq.filter(function (a) { return ciPref(a, curWord); });
         if (list2.length) return { kind: 'attr', list: list2, prefix: curWord, tag: tagName };
       }
     }

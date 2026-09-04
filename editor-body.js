@@ -304,7 +304,9 @@ codeBox.addEventListener('keydown', editorKey);
 codeBox.addEventListener('input', editorInput);
 codeBox.addEventListener('scroll', function () { syncHiScroll(); if (acBox && !acBox.hidden) positionAcBox(); });
 codeBox.addEventListener('click', function () { updateAc(); });
-codeBox.addEventListener('blur', function () { setTimeout(closeAc, 150); });
+codeBox.addEventListener('blur', function () {
+    setTimeout(function () { if (document.activeElement !== codeBox) closeAc(); }, 150);
+});
 document.getElementById('runBtn').addEventListener('click', runCode);
 var clearBtn = document.getElementById('consoleClear');
 if (clearBtn) clearBtn.addEventListener('click', function () { emptyConsole(); });
