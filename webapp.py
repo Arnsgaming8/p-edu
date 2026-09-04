@@ -517,6 +517,29 @@ select option { background: var(--codebg); color: var(--green); }
     tab-size: 4;
     box-sizing: border-box;
 }
+.runner-editor .ed-wrap .code-gutter {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 48px;
+    z-index: 3;
+    pointer-events: none;
+    box-sizing: border-box;
+    overflow: hidden;
+    padding: 12px 6px 12px 0;
+    text-align: right;
+    border-right: 1px solid var(--border);
+    background: color-mix(in srgb, var(--border) 25%, var(--codebg));
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: pre;
+    color: var(--muted);
+    user-select: none;
+}
+.runner-editor .ed-wrap pre#codeHi,
+.runner-editor .ed-wrap textarea#codeBox { padding-left: 68px; }
 .runner-editor .ed-wrap pre#codeHi {
     position: absolute;
     top: 0;
@@ -1600,6 +1623,7 @@ editor_page = f"""
                         </span>
                     </div>
                     <div class="ed-wrap">
+                        <div id="codeGutter" class="code-gutter" aria-hidden="true"></div>
                         <pre id="codeHi" aria-hidden="true"></pre>
                         <textarea id="codeBox" class="code" wrap="off" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" placeholder="Type your HTML here, then press Run to render it in the preview"></textarea>
                         <div id="acBox" class="ac-pop" hidden></div>
@@ -2798,7 +2822,7 @@ def pwa_manifest():
 def pwa_sw():
     from flask import Response
     sw = """
-var CACHE = "platform-v27";
+var CACHE = "platform-v28";
 var PAGES = ["/", "/art", "/math", "/english", "/manifest.json", "/sw.js", "/P.svg", "/icon.svg"];
 
 self.addEventListener("install", function(e) {

@@ -12,6 +12,8 @@ var buffers = { html: HTML_DEFAULT, css: '', js: '' };
 
 var codeBox = document.getElementById('codeBox');
 var codeHi = document.getElementById('codeHi');
+var codeGutter = document.getElementById('codeGutter');
+var _gutterLines = -1;
 var acBox = document.getElementById('acBox');
 var acHost = codeBox ? codeBox.parentElement : null;
 var conBody = document.getElementById('consoleBody');
@@ -112,10 +114,20 @@ function refreshHighlight() {
     if (!codeHi || !window.PlatformHL) return;
     codeHi.innerHTML = window.PlatformHL.highlight(codeBox.value || '', fileLang());
 }
+function refreshGutter() {
+    if (!codeGutter) return;
+    var n = codeBox.value.split('\n').length;
+    if (n === _gutterLines) return;
+    _gutterLines = n;
+    var parts = [];
+    for (var i = 1; i <= n; i++) parts.push(String(i));
+    codeGutter.textContent = parts.join('\n');
+}
 function syncHiScroll() {
     if (!codeHi) return;
     codeHi.scrollTop = codeBox.scrollTop;
     codeHi.scrollLeft = codeBox.scrollLeft;
+    if (codeGutter) codeGutter.scrollTop = codeBox.scrollTop;
 }
 function updateAc() {
     if (!codeBox || !window.PlatformHL) { closeAc(); return; }
@@ -145,6 +157,7 @@ function switchFile(lang) {
     codeBox.scrollLeft = 0;
     syncHiScroll();
     refreshHighlight();
+    refreshGutter();
     codeBox.focus();
 }
 (function wireTabs() {
@@ -279,6 +292,7 @@ function editorKey(e) {
 function editorInput() {
     buffers[active] = codeBox.value;
     refreshHighlight();
+    refreshGutter();
     scheduleSave();
     updateAc();
 }
@@ -286,6 +300,7 @@ function editorInput() {
 loadBufs();
 codeBox.value = buffers.html;
 codeBox.placeholder = FILES[0].ph;
+refreshGutter();
 codeBox.addEventListener('keydown', editorKey);
 codeBox.addEventListener('input', editorInput);
 codeBox.addEventListener('scroll', function () { syncHiScroll(); if (acBox && !acBox.hidden) positionAcBox(); });
