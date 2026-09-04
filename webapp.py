@@ -511,8 +511,8 @@ select option { background: var(--codebg); color: var(--green); }
     font-family: 'Cascadia Code', 'Consolas', monospace;
     font-size: 13px;
     line-height: 1.5;
-    white-space: pre;
-    overflow-wrap: normal;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
     word-break: normal;
     tab-size: 4;
     box-sizing: border-box;
@@ -1625,7 +1625,7 @@ editor_page = f"""
                     <div class="ed-wrap">
                         <div id="codeGutter" class="code-gutter" aria-hidden="true"></div>
                         <pre id="codeHi" aria-hidden="true"></pre>
-                        <textarea id="codeBox" class="code" wrap="off" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" placeholder="Type your HTML here, then press Run to render it in the preview"></textarea>
+                        <textarea id="codeBox" class="code" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" placeholder="Type your HTML here, then press Run to render it in the preview"></textarea>
                         <div id="acBox" class="ac-pop" hidden></div>
                     </div>
                 </div>
@@ -2822,7 +2822,7 @@ def pwa_manifest():
 def pwa_sw():
     from flask import Response
     sw = """
-var CACHE = "platform-v28";
+var CACHE = "platform-v29";
 var PAGES = ["/", "/art", "/math", "/english", "/manifest.json", "/sw.js", "/P.svg", "/icon.svg"];
 
 self.addEventListener("install", function(e) {
