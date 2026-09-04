@@ -1522,7 +1522,7 @@ home_page = f"""
         <div class="card-grid">
             <a class="card" href="/english">
                 <h2>Chat</h2>
-                <p>Chat with friends pick a username, no accounts, and every message disappears the next day.</p>
+                <p>Chat with friends pick a username, no accounts, and every message deletes after 5 days.</p>
             </a>
             <a class="card" href="/art">
                 <h2>AI Studio</h2>
@@ -2020,10 +2020,10 @@ chat_page = f"""
 {NAV}
 <div class="container">
     <section>
-        <h1>Chat <span class="ephemeral-note">every message disappears the next day</span></h1>
+        <h1>Chat <span class="ephemeral-note">every message deletes after 5 days</span></h1>
         <div id="nameScreen" class="name-screen">
             <h2>Pick a username</h2>
-            <p>No accounts pick a name and start chatting with friends. Every message disappears the next day.</p>
+            <p>No accounts needed pick a name and start chatting with friends. Every message deletes after 5 days.</p>
             <div class="row">
                 <input type="text" id="nameInput" placeholder="Your name" maxlength="24" />
             </div>
@@ -2798,7 +2798,7 @@ def pwa_manifest():
 def pwa_sw():
     from flask import Response
     sw = """
-var CACHE = "platform-v26";
+var CACHE = "platform-v27";
 var PAGES = ["/", "/art", "/math", "/english", "/manifest.json", "/sw.js", "/P.svg", "/icon.svg"];
 
 self.addEventListener("install", function(e) {
