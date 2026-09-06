@@ -2478,6 +2478,8 @@ def chat_send():
         return jsonify({"error": "user and to are required"}), 400
     if user.lower() == to.lower():
         return jsonify({"error": "You can't message yourself"}), 400
+    if hard_flag_text(text):
+        return jsonify({"error": "Message blocked by the safety filter."}), 400
     message = _chat_message(user, text)
     day_key = _conv_day_key(_conv_id(user, to))
     try:
@@ -2509,7 +2511,7 @@ def chat_send():
     return jsonify(message), 201
 
 
-from filter import flag_text
+from filter import flag_text, hard_flag_text
 
 
 
@@ -2591,6 +2593,8 @@ def ai_chat():
         if isinstance(m, dict) and m.get("role") == "user" and m.get("content"):
             last_user = m["content"]
             break
+    if hard_flag_text(last_user):
+        return jsonify({"error": "That message was blocked by the safety filter."}), 400
     bad = flag_text(last_user)
 
     moderation_models = [m for m in (os.environ.get("AI_MODERATION_MODEL"), AI_DEFAULT_MODEL, os.environ.get("AI_BACKUP_MODEL", "nvidia/nemotron-3-ultra-550b-a55b:free")) if m]
@@ -2744,8 +2748,7 @@ def ai_chat():
                     continue
         if not content:
             return jsonify({"error": "AI is unavailable right now. Please try again."}), 503
-        bad_reply = flag_text(content)
-        if bad_reply:
+        if hard_flag_text(content):
             content = (
                 "I can't answer that one my response would have contained "
                 "inappropriate content. Ask me something else."
@@ -2922,7 +2925,7 @@ def pwa_manifest():
 def pwa_sw():
     from flask import Response
     sw = """
-var CACHE = "platform-v35";
+var CACHE = "platform-v36";
 var PAGES = ["/", "/art", "/math", "/english", "/manifest.json", "/sw.js", "/P.svg", "/icon.svg"];
 
 self.addEventListener("install", function(e) {
