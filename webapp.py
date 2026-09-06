@@ -1263,7 +1263,7 @@ function sendMessage() {
             aiPass = '';
             try { localStorage.removeItem('platform_ai_pass'); } catch (e2) {}
             window.clearTurnstileToken();
-            if (window.turnstile && window.turnstile.reset) window.turnstile.reset();
+            if (window.refreshTurnstile) window.refreshTurnstile();
             if (window.showTurnstileError) window.showTurnstileError();
         }
         if (data.reply) {
@@ -1415,30 +1415,50 @@ console_shim = """
 editor_js = editor_body_js
 
 
-settings_html = """<div class="turnstile-settings-wrap"><div class="cf-turnstile" id="tsWidget" data-callback="setTurnstileToken" data-expired-callback="clearTurnstileToken" data-error-callback="clearTurnstileToken"></div></div><p class="turnstile-disclosure">Protected by <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Cloudflare Turnstile</a></p>
+settings_html = """<div class="turnstile-settings-wrap"><div id="tsWidget"></div></div><p class="turnstile-disclosure">Protected by <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Cloudflare Turnstile</a></p>
 <script>
 window.TURNSTILE_SITE = (location.hostname.indexOf('github.io') !== -1) ? '0x4AAAAAAEjc0hCJvIuWXbRC' : '0x4AAAAAAEejTO3zb1MAEBIA';
-(function () { try { document.getElementById('tsWidget').setAttribute('data-sitekey', window.TURNSTILE_SITE); } catch (e) {} })();
+window.tsWidgetId = null;
+window.tsRender = function () {
+    if (window.tsWidgetId !== null) return true;
+    if (!window.turnstile || !window.turnstile.render) return false;
+    try {
+        var id = window.turnstile.render('#tsWidget', {
+            sitekey: window.TURNSTILE_SITE,
+            appearance: 'interaction-only',
+            callback: window.setTurnstileToken,
+            'expired-callback': function () { window.turnstileToken = ''; window.refreshTurnstile(); },
+            'error-callback': function () { window.turnstileToken = ''; window.showTurnstileError(); }
+        });
+        if (id === undefined || id === null) return false;
+        window.tsWidgetId = id;
+        return true;
+    } catch (e) { return false; }
+};
 (function () {
-    var hasPass = false;
-    try { hasPass = !!localStorage.getItem('platform_ai_pass'); } catch (e) {}
-    if (!hasPass) { var w = document.getElementById('tsWidget'); if (w) w.setAttribute('data-appearance', 'interaction-only'); }
+    var attempts = 0;
+    var timer = setInterval(function () {
+        attempts++;
+        if (window.tsRender()) { clearInterval(timer); return; }
+        if (attempts > 150) { clearInterval(timer); window.showTurnstileError(); }
+    }, 100);
 })();
 window.turnstileToken = '';
-window.setTurnstileToken = function (token) { window.turnstileToken = token || ''; };
+window.setTurnstileToken = function (token) {
+    window.turnstileToken = token || '';
+    if (window.turnstileToken) { try { document.getElementById('tsRetry').classList.remove('show'); } catch (e) {} }
+};
 window.clearTurnstileToken = function () {
     window.turnstileToken = '';
-    if (window.turnstile && window.turnstile.reset) window.turnstile.reset();
+    if (window.tsWidgetId !== null && window.turnstile && window.turnstile.reset) { try { window.turnstile.reset(window.tsWidgetId); } catch (e) {} }
 };
 window.showTurnstileError = function () {
     try { document.getElementById('tsRetry').classList.add('show'); } catch (e) {}
 };
 window.refreshTurnstile = function () {
     window.turnstileToken = '';
-    var hasPass = false;
-    try { hasPass = !!localStorage.getItem('platform_ai_pass'); } catch (e) {}
-    if (hasPass) return;
-    if (window.turnstile && window.turnstile.reset) window.turnstile.reset();
+    if (window.tsWidgetId !== null && window.turnstile && window.turnstile.reset) { try { window.turnstile.reset(window.tsWidgetId); } catch (e) {} }
+    else { window.tsRender(); }
 };
 window.addEventListener('pageshow', function () {
     setTimeout(window.refreshTurnstile, 0);
@@ -2848,7 +2868,7 @@ def pwa_manifest():
 def pwa_sw():
     from flask import Response
     sw = """
-var CACHE = "platform-v31";
+var CACHE = "platform-v32";
 var PAGES = ["/", "/art", "/math", "/english", "/manifest.json", "/sw.js", "/P.svg", "/icon.svg"];
 
 self.addEventListener("install", function(e) {
