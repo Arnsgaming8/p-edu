@@ -1245,9 +1245,6 @@ if (chatHistory.length) {
 }
 
 function typeOut(el, md) {
-    var caret = document.createElement('span');
-    caret.className = 'type-caret';
-    el.classList.add('typing');
     var n = md.length;
     var i = 0;
     var last = chatLog.scrollTop + chatLog.clientHeight >= chatLog.scrollHeight - 90;
@@ -1255,10 +1252,18 @@ function typeOut(el, md) {
         if (window.__skipTyping) { i = n; }
         var step = i < 400 ? 3 : 6;
         i = Math.min(n, i + step);
-        el.innerHTML = renderMarkdown(md.slice(0, i)) + caret.outerHTML;
+        var caret = document.createElement('span');
+        caret.className = 'type-caret';
+        el.innerHTML = renderMarkdown(md.slice(0, i));
+        el.appendChild(caret);
         if (last) { chatLog.scrollTop = chatLog.scrollHeight; }
         if (i < n) { setTimeout(tick, 18); }
-        else { caret.remove(); el.classList.remove('typing'); window.__skipTyping = false; }
+        else {
+            caret.remove();
+            el.innerHTML = renderMarkdown(md);
+            el.classList.remove('typing');
+            window.__skipTyping = false;
+        }
     }
     tick();
 }
@@ -2907,7 +2912,7 @@ def pwa_manifest():
 def pwa_sw():
     from flask import Response
     sw = """
-var CACHE = "platform-v33";
+var CACHE = "platform-v34";
 var PAGES = ["/", "/art", "/math", "/english", "/manifest.json", "/sw.js", "/P.svg", "/icon.svg"];
 
 self.addEventListener("install", function(e) {
