@@ -316,6 +316,17 @@ select option { background: var(--codebg); color: var(--green); }
     background: var(--green-dark);
     border-color: var(--green);
 }
+.msg-body .type-caret {
+    display: inline-block;
+    width: 9px;
+    height: 1.05em;
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: caret-blink .9s steps(1) infinite;
+}
+@keyframes caret-blink { 50% { opacity: 0; } }
 .msg-body .dot {
     display: inline-block;
     width: 8px;
@@ -1233,7 +1244,31 @@ if (chatHistory.length) {
     addMessage('ai', 'Hi! I am wired into the AI gateway. Ask me anything. This conversation is private to this device.');
 }
 
+function typeOut(el, md) {
+    var caret = document.createElement('span');
+    caret.className = 'type-caret';
+    el.classList.add('typing');
+    var n = md.length;
+    var i = 0;
+    var last = chatLog.scrollTop + chatLog.clientHeight >= chatLog.scrollHeight - 90;
+    function tick() {
+        if (window.__skipTyping) { i = n; }
+        var step = i < 400 ? 3 : 6;
+        i = Math.min(n, i + step);
+        el.innerHTML = renderMarkdown(md.slice(0, i)) + caret.outerHTML;
+        if (last) { chatLog.scrollTop = chatLog.scrollHeight; }
+        if (i < n) { setTimeout(tick, 18); }
+        else { caret.remove(); el.classList.remove('typing'); window.__skipTyping = false; }
+    }
+    tick();
+}
+
+chatLog.addEventListener('click', function () {
+    if (chatLog.querySelector('.typing')) { window.__skipTyping = true; }
+});
+
 function sendMessage() {
+    if (chatLog.querySelector('.typing')) { window.__skipTyping = true; }
     var text = chatInput.value.trim();
     if (!text) return;
     if (!window.turnstileToken && !aiPass) {
@@ -1267,7 +1302,8 @@ function sendMessage() {
             if (window.showTurnstileError) window.showTurnstileError();
         }
         if (data.reply) {
-            pending.innerHTML = renderMarkdown(data.reply);
+            window.__skipTyping = false;
+            typeOut(pending, data.reply);
             chatHistory.push({ role: 'user', content: text });
             chatHistory.push({ role: 'assistant', content: data.reply });
             chatHistory = chatHistory.slice(-60);
@@ -1296,7 +1332,10 @@ function newChat() {
 
 document.getElementById('sendBtn').addEventListener('click', sendMessage);
 chatInput.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') sendMessage();
+    if (e.key === 'Enter') {
+        if (chatLog.querySelector('.typing')) { window.__skipTyping = true; }
+        sendMessage();
+    }
 });
 document.getElementById('newChatBtn').addEventListener('click', newChat);
 
@@ -2868,7 +2907,7 @@ def pwa_manifest():
 def pwa_sw():
     from flask import Response
     sw = """
-var CACHE = "platform-v32";
+var CACHE = "platform-v33";
 var PAGES = ["/", "/art", "/math", "/english", "/manifest.json", "/sw.js", "/P.svg", "/icon.svg"];
 
 self.addEventListener("install", function(e) {
