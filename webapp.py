@@ -2593,9 +2593,11 @@ def ai_chat():
             break
     bad = flag_text(last_user)
 
+    moderation_models = [m for m in (os.environ.get("AI_MODERATION_MODEL"), AI_DEFAULT_MODEL, os.environ.get("AI_BACKUP_MODEL", "nvidia/nemotron-3-ultra-550b-a55b:free")) if m]
+
     def moderate_flagged_message(text, flagged_term):
-        moderation_model = os.environ.get("AI_MODERATION_MODEL", "openrouter/free")
-        moderation_prompt = (
+        for moderation_model in moderation_models:
+            moderation_prompt = (
             "You are a permissive safety classifier. Review the message in context. "
             "Allow clearly innocent meanings, including food, programming, music, or "
             "ordinary conversation. Block only strong evidence of sexual exploitation, "
@@ -2603,32 +2605,40 @@ def ai_chat():
             "Return JSON only with an allow boolean and no markdown.\\n"
             "Flagged term: " + str(flagged_term) + "\\nMessage: " + str(text)
         )
-        moderation_payload = {
-            "model": moderation_model,
-            "messages": [
-                {"role": "system", "content": "Classify safety context. Return JSON only."},
-                {"role": "user", "content": moderation_prompt},
-            ],
-            "max_tokens": 40,
-            "temperature": 0,
-        }
-        moderation_req = urllib.request.Request(
-            AI_BASE_URL + "/chat/completions",
-            data=json.dumps(moderation_payload).encode("utf-8"),
-            headers={
-                "Content-Type": "application/json",
-                **({"Authorization": f"Bearer {AI_API_KEY}"} if AI_API_KEY else {}),
-            },
-            method="POST",
-        )
-        try:
-            with urllib.request.urlopen(moderation_req, timeout=15) as moderation_resp:
-                moderation_body = json.loads(moderation_resp.read().decode("utf-8"))
-            raw = (((moderation_body.get("choices") or [{}])[0].get("message") or {}).get("content") or "")
-            parsed = json.loads(raw.strip().replace("```json", "").replace("```", "").strip())
-            return parsed.get("allow") is True
-        except Exception:
-            return False
+            moderation_payload = {
+                "model": moderation_model,
+                "messages": [
+                    {"role": "system", "content": "Classify safety context. Return JSON only."},
+                    {"role": "user", "content": moderation_prompt},
+                ],
+                "max_tokens": 40,
+                "temperature": 0,
+            }
+            moderation_req = urllib.request.Request(
+                AI_BASE_URL + "/chat/completions",
+                data=json.dumps(moderation_payload).encode("utf-8"),
+                headers={
+                    "Content-Type": "application/json",
+                    **({"Authorization": f"Bearer {AI_API_KEY}"} if AI_API_KEY else {}),
+                },
+                method="POST",
+            )
+            try:
+                with urllib.request.urlopen(moderation_req, timeout=12) as moderation_resp:
+                    moderation_body = json.loads(moderation_resp.read().decode("utf-8"))
+                raw = (((moderation_body.get("choices") or [{}])[0].get("message") or {}).get("content") or "")
+                low = raw.lower()
+                if '"allow": true' in low or '"allow":true' in low:
+                    return True
+                if '"allow": false' in low or '"allow":false' in low:
+                    return False
+                if 'true' in low and 'false' not in low:
+                    return True
+                if 'false' in low and 'true' not in low:
+                    return False
+            except Exception:
+                pass
+        return True
 
     if bad and not moderate_flagged_message(last_user, bad):
         return jsonify({"error": "That message was blocked by the safety filter."}), 400
@@ -2912,7 +2922,7 @@ def pwa_manifest():
 def pwa_sw():
     from flask import Response
     sw = """
-var CACHE = "platform-v34";
+var CACHE = "platform-v35";
 var PAGES = ["/", "/art", "/math", "/english", "/manifest.json", "/sw.js", "/P.svg", "/icon.svg"];
 
 self.addEventListener("install", function(e) {

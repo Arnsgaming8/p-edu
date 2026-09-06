@@ -119,7 +119,7 @@ BAD_WORDS = (
     
     "cocaine", "heroin", "meth", "methamphetamine", "methamphetamines",
     "ecstasy", "mdma", "lsd", "fentanyl", "oxycodone", "ketamine",
-    "weed", "marijuana", "cannabis", "pot", "grass", "chronic", "dope",
+    "weed", "marijuana", "cannabis", "pot", "chronic", "dope",
     "coke", "crack", "acid", "speed", "crystal", "shrooms", "kush",
     "spliff", "spliffs", "bong", "bongs", "smack", "junkie", "junkies",
     "crackhead", "crackheads", "cokehead", "cokeheads", "pothead",
@@ -199,7 +199,7 @@ if __name__ == "__main__":
         ("you hoe", "hoe"),
         ("that simp is such a cuck", "simp"),
         ("wanna smoke some weed", "weed"),
-        ("pass the grass", "grass"),
+        ("pass the grass", None),
         ("she is a b!tch", "bitch"),
         ("p0rn site", "porn"),
         ("slit my wrists", "slit my wrists"),
