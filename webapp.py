@@ -32,8 +32,14 @@ def _asset(name):
 
 hl_lib_js = _asset("hl-lib.js")
 editor_body_js = _asset("editor-body.js")
-TURNSTILE_SITE_KEY = "0x4AAAAAAEjc0hCJvIuWXbRC"
+TURNSTILE_SITE_KEY = "0x4AAAAAAEejTO3zb1MAEBIA"
 TURNSTILE_SECRET_KEY = os.environ.get("TURNSTILE_SECRET_KEY", "")
+TURNSTILE_PAGES_SITE_KEY = "0x4AAAAAAEjc0hCJvIuWXbRC"
+TURNSTILE_PAGES_SECRET_KEY = os.environ.get("TURNSTILE_PAGES_SECRET_KEY", "")
+TURNSTILE_SECRETS = {
+    TURNSTILE_SITE_KEY: TURNSTILE_SECRET_KEY,
+    TURNSTILE_PAGES_SITE_KEY: TURNSTILE_PAGES_SECRET_KEY,
+}
 
 
 UPSTASH_REDIS_REST_URL = os.environ.get("UPSTASH_REDIS_REST_URL", "")
@@ -685,7 +691,7 @@ select option { background: var(--codebg); color: var(--green); }
 }
 .ios-install-card button { margin-top: 16px; }
 .ios-skip { margin-top: 10px; color: var(--muted); font-size: 12px; text-decoration: underline; cursor: pointer; background: none; border: none; }
-.turnstile-settings-wrap{position:fixed;top:12px;right:62px;z-index:1000;transform:scale(.72);transform-origin:top right}.turnstile-disclosure{position:fixed;bottom:6px;right:10px;z-index:999;font-size:10px;opacity:.7;font-family:'Cascadia Code',Consolas,monospace}.turnstile-disclosure a{text-decoration:none;color:inherit}.settings-btn {
+.turnstile-settings-wrap{position:fixed;top:12px;right:62px;z-index:1000;transform:scale(.72);transform-origin:top right}.turnstile-disclosure{position:fixed;bottom:6px;right:10px;z-index:999;font-size:10px;opacity:.7;font-family:'Cascadia Code',Consolas,monospace}.ts-retry{display:none;position:fixed;bottom:6px;left:50%;transform:translateX(-50%);z-index:1001;font-family:'Cascadia Code',Consolas,monospace;font-size:12px;padding:7px 14px;background:var(--bg2,#08120a);color:var(--green,#00ff41);border:1px solid var(--border,#1d3a22);border-radius:4px;cursor:pointer}.ts-retry.show{display:block}.turnstile-disclosure a{text-decoration:none;color:inherit}.settings-btn {
     position: fixed;
     top: 14px;
     right: 14px;
@@ -1239,7 +1245,7 @@ function sendMessage() {
     var pending = addMessage('ai', '');
     pending.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span>';
     var model = 'minimax/minimax-m3:free';
-    var payload = { model: model, messages: [SYSTEM_ANCHOR].concat(chatHistory, [{ role: 'user', content: text }]), turnstile_token: window.turnstileToken || '', verified_pass: aiPass };
+    var payload = { model: model, messages: [SYSTEM_ANCHOR].concat(chatHistory, [{ role: 'user', content: text }]), turnstile_token: window.turnstileToken || '', verified_pass: aiPass, turnstile_sitekey: window.TURNSTILE_SITE || '' };
     fetch(API_BASE + '/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1258,6 +1264,7 @@ function sendMessage() {
             try { localStorage.removeItem('platform_ai_pass'); } catch (e2) {}
             window.clearTurnstileToken();
             if (window.turnstile && window.turnstile.reset) window.turnstile.reset();
+            if (window.showTurnstileError) window.showTurnstileError();
         }
         if (data.reply) {
             pending.innerHTML = renderMarkdown(data.reply);
@@ -1408,24 +1415,38 @@ console_shim = """
 editor_js = editor_body_js
 
 
-settings_html = """<div class="turnstile-settings-wrap"><div class="cf-turnstile" data-sitekey="0x4AAAAAAEjc0hCJvIuWXbRC" data-appearance="interaction-only" data-callback="setTurnstileToken" data-expired-callback="clearTurnstileToken" data-error-callback="clearTurnstileToken"></div></div><p class="turnstile-disclosure">Protected by <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Cloudflare Turnstile</a></p>
+settings_html = """<div class="turnstile-settings-wrap"><div class="cf-turnstile" id="tsWidget" data-callback="setTurnstileToken" data-expired-callback="clearTurnstileToken" data-error-callback="clearTurnstileToken"></div></div><p class="turnstile-disclosure">Protected by <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Cloudflare Turnstile</a></p>
 <script>
+window.TURNSTILE_SITE = (location.hostname.indexOf('github.io') !== -1) ? '0x4AAAAAAEjc0hCJvIuWXbRC' : '0x4AAAAAAEejTO3zb1MAEBIA';
+(function () { try { document.getElementById('tsWidget').setAttribute('data-sitekey', window.TURNSTILE_SITE); } catch (e) {} })();
+(function () {
+    var hasPass = false;
+    try { hasPass = !!localStorage.getItem('platform_ai_pass'); } catch (e) {}
+    if (!hasPass) { var w = document.getElementById('tsWidget'); if (w) w.setAttribute('data-appearance', 'interaction-only'); }
+})();
 window.turnstileToken = '';
 window.setTurnstileToken = function (token) { window.turnstileToken = token || ''; };
 window.clearTurnstileToken = function () {
     window.turnstileToken = '';
     if (window.turnstile && window.turnstile.reset) window.turnstile.reset();
 };
+window.showTurnstileError = function () {
+    try { document.getElementById('tsRetry').classList.add('show'); } catch (e) {}
+};
 window.refreshTurnstile = function () {
     window.turnstileToken = '';
     var hasPass = false;
     try { hasPass = !!localStorage.getItem('platform_ai_pass'); } catch (e) {}
-    if (hasPass) return;  
+    if (hasPass) return;
     if (window.turnstile && window.turnstile.reset) window.turnstile.reset();
 };
 window.addEventListener('pageshow', function () {
     setTimeout(window.refreshTurnstile, 0);
 });
+(function () {
+    var r = document.getElementById('tsRetry');
+    if (r) r.addEventListener('click', function () { r.classList.remove('show'); window.refreshTurnstile(); });
+})();
 </script>
 <button class="settings-btn" id="settingsBtn" aria-label="Settings" title="Settings"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor" style="vertical-align:middle;"><path d="m370-80-16-128q-13-5-24.5-12T307-235l-119 50L78-375l103-78q-1-7-1-13.5v-27q0-6.5 1-13.5L78-585l110-190 119 50q11-8 23-15t24-12l16-128h220l16 128q13 5 24.5 12t22.5 15l119-50 110 190-103 78q1 7 1 13.5v27q0 6.5-2 13.5l103 78-110 190-118-50q-11 8-23 15t-24 12L590-80H370Zm70-80h79l14-106q31-8 57.5-23.5T639-327l99 41 39-68-86-65q5-14 7-29.5t2-31.5q0-16-2-31.5t-7-29.5l86-65-39-68-99 42q-22-23-48.5-38.5T533-694l-13-106h-79l-14 106q-31 8-57.5 23.5T321-633l-99-41-39 68 86 64q-5 15-7 30t-2 32q0 16 2 31t7 30l-86 65 39 68 99-42q22 23 48.5 38.5T427-266l13 106Zm42-180q58 0 99-41t41-99q0-58-41-99t-99-41q-59 0-99.5 41T342-480q0 58 40.5 99t99.5 41Zm-2-140Z"/></svg></button>
 <div class="settings-overlay" id="settingsOverlay">
@@ -2470,17 +2491,21 @@ def ai_chat():
     messages = data.get("messages") or []
     model = AI_DEFAULT_MODEL
     minted_pass = None
-    if TURNSTILE_SECRET_KEY:
+    if TURNSTILE_SECRET_KEY or TURNSTILE_PAGES_SECRET_KEY:
         verified_pass = (data.get("verified_pass") or "").strip()
         if verified_pass and _check_ai_pass(verified_pass):
-            pass  
+            pass
         else:
             token = (data.get("turnstile_token") or "").strip()
+            widget_sitekey = (data.get("turnstile_sitekey") or "").strip()
+            widget_secret = TURNSTILE_SECRETS.get(widget_sitekey) or TURNSTILE_SECRET_KEY or TURNSTILE_PAGES_SECRET_KEY
             if not token:
                 return jsonify({"error": "Please complete the verification and try again."}), 403
+            if not widget_secret:
+                return jsonify({"error": "Verification is not configured on this deployment."}), 503
             verify_req = urllib.request.Request(
                 "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-                data=json.dumps({"secret": TURNSTILE_SECRET_KEY, "response": token, "remoteip": request.remote_addr}).encode("utf-8"),
+                data=json.dumps({"secret": widget_secret, "response": token, "remoteip": request.remote_addr}).encode("utf-8"),
                 headers={"Content-Type": "application/json"},
                 method="POST",
             )
@@ -2490,7 +2515,8 @@ def ai_chat():
             except Exception:
                 return jsonify({"error": "Verification service unavailable. Please try again."}), 503
             if not verification.get("success"):
-                return jsonify({"error": "Verification failed. Please try again."}), 403  
+                codes = ", ".join(str(c) for c in (verification.get("error-codes") or [])) or "unknown"
+                return jsonify({"error": "Verification failed. Please try again. (" + codes + ")"}), 403  
             minted_pass = _mint_ai_pass()
     if not messages:
         return jsonify({"error": "No messages provided"}), 400
@@ -2822,7 +2848,7 @@ def pwa_manifest():
 def pwa_sw():
     from flask import Response
     sw = """
-var CACHE = "platform-v30";
+var CACHE = "platform-v31";
 var PAGES = ["/", "/art", "/math", "/english", "/manifest.json", "/sw.js", "/P.svg", "/icon.svg"];
 
 self.addEventListener("install", function(e) {
