@@ -2907,7 +2907,8 @@ def pwa_manifest():
     return jsonify({
         "name": "The Platform",
         "short_name": "The Platform",
-        "start_url": "/",
+        "start_url": "./",
+        "scope": "./",
         "display": "standalone",
         "background_color": "#050a05",
         "theme_color": "#00ff41",
@@ -2925,8 +2926,11 @@ def pwa_manifest():
 def pwa_sw():
     from flask import Response
     sw = """
-var CACHE = "platform-v37";
-var PAGES = ["/", "/art", "/math", "/english", "/manifest.json", "/sw.js", "/P.svg", "/icon.svg"];
+var CACHE = "platform-v38";
+var IS_GH = self.location.hostname.indexOf("github.io") !== -1;
+var PAGES = IS_GH
+    ? ["./", "./english.html", "./art.html", "./math.html", "./manifest.json", "./icon.svg", "./P.svg"]
+    : ["/", "/art", "/math", "/english", "/manifest.json", "/icon.svg", "/P.svg"];
 
 self.addEventListener("install", function(e) {
     
@@ -2951,7 +2955,7 @@ self.addEventListener("activate", function(e) {
     );
 });
 
-var OFFLINE_PAGE = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>The Platform</title><style>body{margin:0;font-family:'Cascadia Code',Consolas,monospace;background:#050a05;color:#c8ffd2;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center}.card{border:1px solid #1d3a22;padding:36px 44px;max-width:460px}h1{color:#00ff41;letter-spacing:3px;text-transform:uppercase;text-shadow:0 0 12px rgba(0,255,65,.4)}p{color:#6f9c77}a{color:#00ff41;text-decoration:none;border:1px solid #00ff41;padding:8px 18px;display:inline-block;margin-top:10px}</style></head><body><div class="card"><h1>The Platform</h1><p>You are offline right now. The saved app is still here.</p><a href="/">Open The Platform</a></div></body></html>`;
+var OFFLINE_PAGE = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>The Platform</title><style>body{margin:0;font-family:'Cascadia Code',Consolas,monospace;background:#050a05;color:#c8ffd2;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center}.card{border:1px solid #1d3a22;padding:36px 44px;max-width:460px}h1{color:#00ff41;letter-spacing:3px;text-transform:uppercase;text-shadow:0 0 12px rgba(0,255,65,.4)}p{color:#6f9c77}a{color:#00ff41;text-decoration:none;border:1px solid #00ff41;padding:8px 18px;display:inline-block;margin-top:10px}</style></head><body><div class="card"><h1>The Platform</h1><p>You are offline right now. The saved app is still here.</p><a href="./">Open The Platform</a></div></body></html>`;
 
 self.addEventListener("fetch", function(e) {
     var url = e.request.url;
@@ -2961,8 +2965,10 @@ self.addEventListener("fetch", function(e) {
 
     
     function fallback() {
-        return caches.match("/").then(function(h) {
-            return h || new Response(OFFLINE_PAGE, { headers: { "Content-Type": "text/html" } });
+        return caches.match("./").then(function(h) {
+            return h || caches.match("/").then(function(h2) {
+                return h2 || new Response(OFFLINE_PAGE, { headers: { "Content-Type": "text/html" } });
+            });
         });
     }
 
